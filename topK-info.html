@@ -1,0 +1,62 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Understanding Top-K Sampling</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Times New Roman', Times, serif; background-color: #fffaf0; padding: 2rem; color: #333; }
+        h1 { color: #00695c; } /* Darker teal */
+        h2 { color: #558b2f; margin-top: 1.5rem; } /* Light Green */
+        code { background-color: #e8f5e9; color: #2e7d32; padding: 0.2rem 0.4rem; border-radius: 4px; font-family: monospace; }
+        p { line-height: 1.6; }
+        .container { max-width: 800px; margin: auto; background-color: #ffffff; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Understanding Top-K Sampling</h1>
+        <p><strong>Top-K</strong> sampling is a method used to control the selection of the next word (or token) when generating text. It limits the model's choices to the <code>K</code> most probable next words.</p>
+
+        <h2>How it Works</h2>
+        <p>At each step of text generation:</p>
+        <ul>
+            <li>The model calculates the probability for all possible next words in its vocabulary.</li>
+            <li>It then identifies the <code>K</code> words that have the highest probabilities.</li>
+            <li>The model then samples the next word only from this reduced set of <code>K</code> words. The actual selection from these K words is often further influenced by the Temperature setting.</li>
+        </ul>
+        <p>For example:</p>
+        <ul>
+            <li>If <code>topK = 1</code>: This is called "greedy decoding." The model will always pick the single most likely next word. The output becomes very deterministic but can be repetitive or dull.</li>
+            <li>If <code>topK = 50</code>: The model considers the 50 most probable words and then makes a selection from among them, typically using Temperature to influence the choice.</li>
+        </ul>
+
+        <h2>Effect on Romantic Narrative Transformation</h2>
+        <p>Top-K influences the breadth of word choices available to the model:</p>
+        <ul>
+            <li><strong>Low Top-K (e.g., <code>5</code> - <code>10</code>):</strong>
+                <p>The model is restricted to a very small set of highly probable words. This can make the output more focused and predictable, but also potentially less creative and more repetitive. It strongly discourages less common word choices.</p>
+                <p><em>Example Idea:</em> For describing a beautiful garden, a low Top-K might always result in common words like "hoa" (flowers), "cây" (trees), "xanh" (green), leading to a very standard description.</p>
+            </li>
+            <li><strong>Medium Top-K (e.g., <code>40</code> - <code>60</code>):</strong>
+                <p>This is often a good default range. It allows for a reasonable amount of diversity and creativity by considering a decent pool of probable words, without being overly restrictive or too broad. The model has enough options to construct varied and interesting sentences.</p>
+                <p><em>Example Idea:</em> For the garden, a medium Top-K might allow for words like "thảm cỏ mượt mà" (velvety lawn), "những đóa hồng nhung" (velvet roses), "tiếng chim líu lo" (chirping birds), offering a richer, more romantic description.</p>
+            </li>
+            <li><strong>High Top-K (e.g., <code>100+</code>, or <code>0</code> which often means no Top-K filtering):</strong>
+                <p>The model considers a very large number of potential next words. While this offers maximum theoretical diversity, its effect can be diminished if Top-P is also used and is set to a more restrictive value. If Top-K is very high (or off) and Top-P is also high, the Temperature setting becomes the primary controller of randomness from a vast pool of choices. This could sometimes introduce slightly less relevant or lower quality words if not managed well.</p>
+            </li>
+        </ul>
+        <p>Top-K can be seen as a simpler alternative or complement to Top-P. While Top-P dynamically chooses the number of words based on cumulative probability, Top-K uses a fixed number.</p>
+
+        <h2>Recommendation for This App</h2>
+        <p>A common default value for Top-K is around <strong><code>40</code> to <code>50</code></strong>. This generally provides a good balance.</p>
+        <ul>
+            <li>If the output seems too constrained and uses very limited vocabulary, you might try increasing Top-K.</li>
+            <li>If the output is too erratic and you're not using Top-P, or if Top-P is very high, then lowering Top-K could help focus the model. However, Top-P is often preferred for more nuanced control over the vocabulary pool.</li>
+        </ul>
+        <p>Many find that adjusting Temperature and Top-P has a more direct and intuitive impact on the "feel" of the generated text than Top-K, especially when Top-P is active. You can experiment with Top-K, but it might be a secondary parameter to tune after Temperature and Top-P.</p>
+    </div>
+</body>
+</html>

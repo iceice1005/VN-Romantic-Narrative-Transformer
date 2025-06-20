@@ -1,0 +1,76 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Understanding Model Selection</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Times New Roman', Times, serif; background-color: #fffaf0; padding: 2rem; color: #333; }
+        h1 { color: #4a148c; } /* Dark Purple */
+        h2 { color: #7b1fa2; margin-top: 1.5rem; } /* Medium Purple */
+        h3 { color: #8e24aa; margin-top: 1rem; } /* Lighter Purple */
+        code { background-color: #f3e5f5; color: #6a1b9a; padding: 0.2rem 0.4rem; border-radius: 4px; font-family: monospace; }
+        p { line-height: 1.6; }
+        ul { list-style-type: disc; margin-left: 1.5rem; }
+        .container { max-width: 800px; margin: auto; background-color: #ffffff; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .note { background-color: #e3f2fd; border-left: 4px solid #2196f3; padding: 1rem; margin-top: 1rem; color: #1e3a8a; }
+        .recommendation { background-color: #e8f5e9; border-left: 4px solid #4caf50; padding: 1rem; margin-top: 1rem; color: #1b5e20;}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Understanding Model Selection</h1>
+        <p>This setting allows you to choose which Google Gemini model is used for the romantic narrative transformation. Different models may have varying capabilities, performance characteristics, and costs associated with them.</p>
+
+        <h2>Models Selectable in This Application</h2>
+        <p>This application allows you to choose from the following curated text generation models:</p>
+        <ul>
+            <li>
+                <strong><code>gemini-2.5-flash-preview-04-17</code> (Gemini 2.5 Flash - Preview - Recommended):</strong>
+                This is the default and highly recommended model. It's fast, versatile, and well-suited for a wide range of text generation tasks, including the creative transformation performed by this application. It's designed for high throughput and lower latency, making it an excellent choice for free-tier usage.
+            </li>
+            <li>
+                <strong><code>gemini-2.5-pro</code> (Gemini 2.5 Pro):</strong>
+                This model is optimized for enhanced thinking and reasoning, capable of handling more complex tasks. You can select this if you wish to experiment with potentially more nuanced or elaborate transformations, keeping in mind it might have different performance and cost implications compared to Flash.
+            </li>
+            <li>
+                <strong><code>gemini-2.5-flash-lite-preview-06-17</code> (Gemini 2.5 Flash Lite - Preview):</strong>
+                This model is presented as a cost-efficient option supporting high throughput. It could be a good alternative if you are looking for efficiency similar to the standard Flash model.
+            </li>
+        </ul>
+        
+        <div class="recommendation">
+            <p><strong>Recommendation for This App:</strong> For most users of this Romantic Narrative Transformer, sticking with the default selected model, <strong><code>gemini-2.5-flash-preview-04-17</code></strong>, is strongly recommended. It provides an optimal balance of quality, speed, and free-tier compatibility for the narrative transformation task.</p>
+        </div>
+
+        <h2>Free Tier Considerations</h2>
+        <p>The models available in this application are chosen with free-tier usage in mind, based on current Google Generative AI guidelines. The <code>gemini-2.5-flash-preview-04-17</code> model is generally available under the free tier, subject to Google's usage limits.</p>
+        <p>It's important to be aware of the following:</p>
+        <ul>
+            <li><strong>Usage Limits:</strong> Free tiers often come with limitations on the number of requests you can make per minute or per day. If you exceed these limits, you might encounter errors.</li>
+            <li><strong>Model Availability:</strong> Model names, availability, and their inclusion in free tiers can change over time as Google updates its offerings. The "preview" in a model name indicates it might be subject to changes.</li>
+            <li><strong>Feature Sets:</strong> Different models might have different strengths. The models in the dropdown are selected for their text generation capabilities relevant to this app.</li>
+        </ul>
+
+        <h2>Other Gemini Models (General Information)</h2>
+        <p>The Gemini family includes a diverse range of models optimized for various tasks. While not all are selectable in this specific application to maintain focus and simplicity, here are some examples of other text-input/text-output models you might encounter in the broader Gemini ecosystem:</p>
+        <ul>
+            <li><code>gemini-2.0-flash</code> and <code>gemini-2.0-flash-lite</code>: Part of the Gemini 2.0 series, also focused on speed, efficiency, and next-generation features.</li>
+        </ul>
+        <p>The Gemini API also supports models for other modalities, such as:</p>
+        <ul>
+            <li>Image generation (e.g., <code>imagen-3.0-generate-002</code>)</li>
+            <li>Audio processing and generation (e.g., various TTS models)</li>
+            <li>Video understanding and generation (e.g., <code>veo-2.0-generate-001</code>)</li>
+            <li>Text embeddings (e.g., <code>gemini-embedding-exp</code>)</li>
+        </ul>
+        <div class="note">
+            <p><strong>Note:</strong> This "Romantic Narrative Transformer" application is specifically designed for <strong>text-to-text transformation</strong>. Therefore, models for other modalities like image generation, audio, or video are not applicable or selectable within this tool's current functionality.</p>
+        </div>
+        
+        <p>Always refer to the official Google Cloud documentation for the most up-to-date information on Gemini models, their capabilities, pricing, and free tier details.</p>
+    </div>
+</body>
+</html>

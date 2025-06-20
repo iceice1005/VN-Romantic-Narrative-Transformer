@@ -1,0 +1,51 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Understanding Temperature</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Times New Roman', Times, serif; background-color: #fffaf0; padding: 2rem; color: #333; }
+        h1 { color: #d32f2f; } /* Darker red */
+        h2 { color: #7b1fa2; margin-top: 1.5rem; } /* Purple */
+        code { background-color: #fce4ec; color: #ad1457; padding: 0.2rem 0.4rem; border-radius: 4px; font-family: monospace; }
+        p { line-height: 1.6; }
+        .container { max-width: 800px; margin: auto; background-color: #ffffff; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Understanding Temperature</h1>
+        <p>The <strong>Temperature</strong> parameter controls the randomness of the model's output. It influences how "creative" or "surprising" the generated text will be.</p>
+
+        <h2>How it Works</h2>
+        <p>When generating text, the model assigns probabilities to possible next words (or tokens). Temperature adjusts these probabilities:</p>
+        <ul>
+            <li><strong>Lower Temperature (e.g., 0.1 - 0.5):</strong> Makes the output more deterministic and focused. The model becomes more confident in its choices and is more likely to pick the most probable words. This results in text that is often more predictable, consistent, and factual.</li>
+            <li><strong>Higher Temperature (e.g., 0.7 - 1.0, or even higher up to 2.0 for some models):</strong> Makes the output more random and creative. The model is encouraged to consider less likely words, leading to more diverse, surprising, and sometimes novel-sounding text. However, if too high, it can also lead to less coherent or nonsensical output.</li>
+        </ul>
+
+        <h2>Effect on Romantic Narrative Transformation</h2>
+        <p>In the context of transforming text into a romantic narrative:</p>
+        <ul>
+            <li><strong>Low Temperature (e.g., <code>0.3</code>):</strong>
+                <p>The transformation will likely stick to more conventional romantic phrasings and structures. It will be more consistent but might feel less "inspired" or unique.</p>
+                <p><em>Example Idea:</em> If the original says "They met," a low temperature might consistently output "Họ đã gặp nhau trong một buổi chiều dịu dàng." (They met on a gentle afternoon.) - A common, safe romantic trope.</p>
+            </li>
+            <li><strong>Medium Temperature (e.g., <code>0.6</code> - <code>0.7</code>):</strong>
+                <p>A good balance for this application. It allows for creative embellishments and romantic flair without straying too far from coherence or the original meaning. This is often a good starting point.</p>
+                <p><em>Example Idea:</em> "Họ tình cờ gặp gỡ, như thể định mệnh đã khéo léo sắp đặt, vào một buổi chiều vàng rực rỡ." (They chanced upon each other, as if destiny had skillfully arranged it, on a brilliantly golden afternoon.) - More evocative and descriptive.</p>
+            </li>
+            <li><strong>High Temperature (e.g., <code>0.9</code>):</strong>
+                <p>The narrative might become highly poetic, using very unusual metaphors or imagery. It could be very creative but also risks becoming overly florid, less clear, or occasionally producing slightly off-topic embellishments if not carefully guided by a strong prompt.</p>
+                <p><em>Example Idea:</em> "Dưới vòm trời lụa đào, nơi những vì sao thêu dệt mộng mơ, họ đã chạm mặt nhau, và khoảnh khắc ấy, thời gian dường như ngưng đọng." (Beneath a peach-silk sky, where stars embroidered dreams, they met, and in that moment, time seemed to stand still.) - Very poetic, perhaps more abstract.</p>
+            </li>
+        </ul>
+
+        <h2>Recommendation for This App</h2>
+        <p>Start with a moderate temperature, perhaps around <strong><code>0.5</code> to <code>0.7</code></strong>. If you find the output too plain, try increasing it slightly. If it becomes too wild or nonsensical, decrease it. Experiment to find the sweet spot that aligns with your desired level of romantic elegance and creativity.</p>
+    </div>
+</body>
+</html>

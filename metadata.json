@@ -1,0 +1,6 @@
+{
+  "name": "Romantic Narrative Transformer",
+  "description": "Transforms raw Vietnamese text (originally translated from Chinese) into a flowing, romantic narrative with the elegant flair of a classic romance novel. Includes a history of transformations.",
+  "requestFramePermissions": [],
+  "prompt": ""
+}
