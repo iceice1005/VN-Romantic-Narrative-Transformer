@@ -9,10 +9,27 @@ import { PromptEditor } from './components/PromptEditor';
 import { transformTextViaGemini } from './services/geminiService';
 import { TransformationEntry } from './types';
 import { IndeterminateProgressBar } from './components/IndeterminateProgressBar';
-import { Modal } from './components/Modal'; // Import Modal
+import { Modal } from './components/Modal';
 import { DEFAULT_SYSTEM_INSTRUCTION, DEFAULT_MODEL_ID, AVAILABLE_TEXT_MODELS } from './constants';
 import logo from './logo.svg';
 import logo_author from './logo_author.png'; // Import the author logo
+// Import Info Components
+import TemperatureInfo from './components/info/TemperatureInfo';
+import TopPInfo from './components/info/TopPInfo';
+import TopKInfo from './components/info/TopKInfo';
+import SeedInfo from './components/info/SeedInfo';
+import ModelSelectionInfo from './components/info/ModelSelectionInfo';
+
+
+export type InfoComponentKey = 'temperature' | 'topP' | 'topK' | 'seed' | 'modelSelection';
+
+const infoComponentMap: Record<InfoComponentKey, React.FC> = {
+  temperature: TemperatureInfo,
+  topP: TopPInfo,
+  topK: TopKInfo,
+  seed: SeedInfo,
+  modelSelection: ModelSelectionInfo,
+};
 
 const App: React.FC = () => {
   const [systemInstruction, setSystemInstruction] = useState<string>(DEFAULT_SYSTEM_INSTRUCTION);
@@ -34,36 +51,27 @@ const App: React.FC = () => {
   // Modal State
   const [isInfoModalOpen, setIsInfoModalOpen] = useState<boolean>(false);
   const [infoModalTitle, setInfoModalTitle] = useState<string>('');
-  const [infoModalContent, setInfoModalContent] = useState<string | null>(null);
+  const [infoModalContent, setInfoModalContent] = useState<React.ReactNode | null>(null); // Changed type
   const [isInfoModalLoading, setIsInfoModalLoading] = useState<boolean>(false);
   const [infoModalError, setInfoModalError] = useState<string | null>(null);
 
 
-  const handleOpenInfoModal = useCallback(async (title: string, htmlFilePath: string) => {
+  const handleOpenInfoModal = useCallback(async (title: string, componentKey: InfoComponentKey) => {
     setInfoModalTitle(title);
     setIsInfoModalOpen(true);
-    setIsInfoModalLoading(true);
+    setIsInfoModalLoading(true); // Keep loading state briefly for consistency
     setInfoModalContent(null);
     setInfoModalError(null);
 
     try {
-      const response = await fetch(htmlFilePath);
-      if (!response.ok) {
-        throw new Error(`Failed to load content (status: ${response.status}). File path: ${htmlFilePath}`);
-      }
-      const htmlText = await response.text();
-      // Attempt to extract content within the <div class="container"> or <body> if container not found
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(htmlText, 'text/html');
-      const containerContent = doc.querySelector('.container');
-      if (containerContent) {
-        setInfoModalContent(containerContent.innerHTML);
+      const InfoComponent = infoComponentMap[componentKey];
+      if (InfoComponent) {
+        setInfoModalContent(<InfoComponent />);
       } else {
-         // Fallback to body content if specific container isn't found
-        setInfoModalContent(doc.body.innerHTML);
+        throw new Error(`Info component for key "${componentKey}" not found.`);
       }
     } catch (err) {
-      console.error('Failed to fetch modal content:', err);
+      console.error('Failed to load modal component:', err);
       const errorMessage = err instanceof Error ? err.message : 'Unknown error loading content.';
       setInfoModalError(errorMessage);
     } finally {
@@ -123,7 +131,7 @@ const App: React.FC = () => {
       const endTime = performance.now();
       const durationMs = endTime - startTime;
       setLastTransformationDuration(durationMs);
-      setOutputText(transformed);
+setOutputText(transformed);
 
       const currentModelDetails = AVAILABLE_TEXT_MODELS.find(m => m.id === selectedModel);
 
@@ -220,7 +228,7 @@ const App: React.FC = () => {
                   seed={seed}
                   setSeed={setSeed}
                   isLoading={isLoading}
-                  onOpenInfoModal={handleOpenInfoModal} // Pass modal opener
+                  onOpenInfoModal={handleOpenInfoModal}
                 />
               </div>
             )}
@@ -254,53 +262,53 @@ const App: React.FC = () => {
             onUpdateHistoryItemTitlePrefix={handleUpdateHistoryItemTitlePrefix}
           />
         </main>
-      <footer className="w-full max-w-4xl text-center py-8 mt-auto text-xl text-gray-500" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
-      <p className="mt-2 flex items-center justify-center text-lg"> {/* Increased font size here */}
-          Powered by     &nbsp;
-
-          <a href="https://github.com/iceice1005"   target="_blank" 
-  rel="noopener noreferrer" className="text-pink-600 hover:text-pink-700 hover:scale-110 transition-transform duration-200" style={{display: "flex", alignItems: "center"}}>
-            <img
-              src={logo_author}
-              alt="Avatar"
-              style={{
-                width: "50px",          // Điều chỉnh kích thước
-                height: "50px",
-                borderRadius: "50%",     // Bo tròn 100% → hình tròn
-                objectFit: "cover",      // Ảnh không bị méo
-                display: "block",        // Loại bỏ khoảng trống dưới ảnh
-              }}
-            />
-            <strong>IceIce1005</strong> {/* Removed quotes */}
-          </a>
-          &nbsp; with Germini API
-        </p>
-        <p className="mt-2 flex items-center justify-center text-lg"> {/* Increased font size here */}
-          Inspired by novel translation method of    &nbsp;
-
-          <a href="https://tytnovel.xyz/profile/68235138018b5e6aea6b0abf"   target="_blank" 
-  rel="noopener noreferrer" className="text-pink-600 hover:text-pink-700 hover:scale-110 transition-transform duration-200" style={{display: "flex", alignItems: "center"}}>
-            <img
-              src={logo}
-              alt="Avatar"
-              style={{
-                width: "50px",          // Điều chỉnh kích thước
-                height: "50px",
-                borderRadius: "50%",     // Bo tròn 100% → hình tròn
-                objectFit: "cover",      // Ảnh không bị méo
-                display: "block",        // Loại bỏ khoảng trống dưới ảnh
-              }}
-            />
-            <strong>Edit vì đam mê</strong> {/* Removed quotes */}
-          </a>
-        </p>
-      </footer>
+       <footer className="w-full max-w-4xl text-center py-8 mt-auto text-xl text-gray-500" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
+       <p className="mt-2 flex items-center justify-center text-lg"> {/* Increased font size here */}
+           Powered by     &nbsp;
+ 
+           <a href="https://github.com/iceice1005"   target="_blank" 
+   rel="noopener noreferrer" className="text-pink-600 hover:text-pink-700 hover:scale-110 transition-transform duration-200" style={{display: "flex", alignItems: "center"}}>
+             <img
+               src={logo_author}
+               alt="Avatar"
+               style={{
+                 width: "50px",          // Điều chỉnh kích thước
+                 height: "50px",
+                 borderRadius: "50%",     // Bo tròn 100% → hình tròn
+                 objectFit: "cover",      // Ảnh không bị méo
+                 display: "block",        // Loại bỏ khoảng trống dưới ảnh
+               }}
+             />
+             <strong>IceIce1005</strong> {/* Removed quotes */}
+           </a>
+           &nbsp; with Germini API
+         </p>
+         <p className="mt-2 flex items-center justify-center text-lg"> {/* Increased font size here */}
+           Inspired by novel translation method of    &nbsp;
+ 
+           <a href="https://tytnovel.xyz/profile/68235138018b5e6aea6b0abf"   target="_blank" 
+   rel="noopener noreferrer" className="text-pink-600 hover:text-pink-700 hover:scale-110 transition-transform duration-200" style={{display: "flex", alignItems: "center"}}>
+             <img
+               src={logo}
+               alt="Avatar"
+               style={{
+                 width: "50px",          // Điều chỉnh kích thước
+                 height: "50px",
+                 borderRadius: "50%",     // Bo tròn 100% → hình tròn
+                 objectFit: "cover",      // Ảnh không bị méo
+                 display: "block",        // Loại bỏ khoảng trống dưới ảnh
+               }}
+             />
+             <strong>Edit vì đam mê</strong> {/* Removed quotes */}
+           </a>
+         </p>
+       </footer>
       </div>
       <Modal
         isOpen={isInfoModalOpen}
         onClose={handleCloseInfoModal}
         title={infoModalTitle}
-        htmlContent={infoModalContent}
+        content={infoModalContent} // Changed from htmlContent to content
         isLoading={isInfoModalLoading}
         error={infoModalError}
       />

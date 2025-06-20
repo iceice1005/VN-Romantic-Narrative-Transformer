@@ -1,15 +1,16 @@
+
 import React from 'react';
 
 interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   title: string;
-  htmlContent: string | null;
+  content: React.ReactNode | null; // Changed from htmlContent: string | null
   isLoading: boolean;
   error: string | null;
 }
 
-export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, htmlContent, isLoading, error }) => {
+export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, content, isLoading, error }) => {
   if (!isOpen) {
     return null;
   }
@@ -52,13 +53,13 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, htmlConten
             <div className="text-red-600 text-center p-4 bg-red-50 rounded border border-red-300">
               <p className="font-semibold">Could not load content:</p>
               <p className="text-sm">{error}</p>
-              <p className="text-sm mt-2">Please ensure the file exists and the path is correct.</p>
+              <p className="text-sm mt-2">Please ensure the file exists and the path is correct or the component key is valid.</p>
             </div>
           )}
-          {!isLoading && !error && htmlContent && (
-            <div dangerouslySetInnerHTML={{ __html: htmlContent }} />
+          {!isLoading && !error && content && ( // Render ReactNode directly
+            <div>{content}</div>
           )}
-           {!isLoading && !error && !htmlContent && (
+           {!isLoading && !error && !content && (
              <div className="flex justify-center items-center h-32">
                 <p className="text-gray-500">No content to display.</p>
              </div>

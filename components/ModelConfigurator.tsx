@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { SelectControl } from './SelectControl'; 
+import { InfoComponentKey } from '../App'; // Import InfoComponentKey
 
 interface ModelOption {
   id: string;
@@ -20,7 +21,7 @@ interface ModelConfiguratorProps {
   seed: string;
   setSeed: (value: string) => void;
   isLoading: boolean;
-  onOpenInfoModal: (title: string, htmlFilePath: string) => void; // Added prop
+  onOpenInfoModal: (title: string, componentKey: InfoComponentKey) => void; // Updated prop type
 }
 
 const ParameterControl: React.FC<{
@@ -32,10 +33,10 @@ const ParameterControl: React.FC<{
   max: number;
   step: number;
   isLoading: boolean;
-  helpDoc: string;
+  helpDocKey: InfoComponentKey; // Renamed from helpDoc
   valueFormatter?: (value: number) => string;
-  onOpenInfoModal: (title: string, htmlFilePath: string) => void; // Added prop
-}> = ({ id, label, value, setValue, min, max, step, isLoading, helpDoc, valueFormatter, onOpenInfoModal }) => {
+  onOpenInfoModal: (title: string, componentKey: InfoComponentKey) => void; // Updated prop type
+}> = ({ id, label, value, setValue, min, max, step, isLoading, helpDocKey, valueFormatter, onOpenInfoModal }) => {
   const displayValue = valueFormatter ? valueFormatter(value) : value.toString();
   
   return (
@@ -44,7 +45,7 @@ const ParameterControl: React.FC<{
         {label}
         <button
           type="button"
-          onClick={() => onOpenInfoModal(`Understanding ${label}`, helpDoc)}
+          onClick={() => onOpenInfoModal(`Understanding ${label}`, helpDocKey)}
           className="ml-2 text-xs text-blue-500 hover:text-blue-700 underline focus:outline-none"
           aria-label={`Learn more about ${label}`}
           disabled={isLoading}
@@ -104,16 +105,16 @@ const NumberInputControl: React.FC<{
     setValue: (value: string) => void;
     placeholder: string;
     isLoading: boolean;
-    helpDoc: string;
-    onOpenInfoModal: (title: string, htmlFilePath: string) => void; // Added prop
-  }> = ({ id, label, value, setValue, placeholder, isLoading, helpDoc, onOpenInfoModal }) => {
+    helpDocKey: InfoComponentKey; // Renamed from helpDoc
+    onOpenInfoModal: (title: string, componentKey: InfoComponentKey) => void; // Updated prop type
+  }> = ({ id, label, value, setValue, placeholder, isLoading, helpDocKey, onOpenInfoModal }) => {
     return (
       <div className="mb-4">
         <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-1">
           {label}
           <button
             type="button"
-            onClick={() => onOpenInfoModal(`Understanding ${label}`, helpDoc)}
+            onClick={() => onOpenInfoModal(`Understanding ${label}`, helpDocKey)}
             className="ml-2 text-xs text-blue-500 hover:text-blue-700 underline focus:outline-none"
             aria-label={`Learn more about ${label}`}
             disabled={isLoading}
@@ -157,7 +158,7 @@ export const ModelConfigurator: React.FC<ModelConfiguratorProps> = ({
   seed,
   setSeed,
   isLoading,
-  onOpenInfoModal, // Destructure the new prop
+  onOpenInfoModal,
 }) => {
   const modelOptions = availableModels.map(model => ({ value: model.id, label: model.name }));
 
@@ -175,8 +176,8 @@ export const ModelConfigurator: React.FC<ModelConfiguratorProps> = ({
             setValue={setSelectedModel}
             options={modelOptions}
             isLoading={isLoading}
-            helpDoc="model-selection-info.html"
-            onOpenInfoModal={onOpenInfoModal} // Pass prop
+            helpDocKey="modelSelection" // Pass key
+            onOpenInfoModal={onOpenInfoModal}
           />
         </div>
         <ParameterControl
@@ -188,9 +189,9 @@ export const ModelConfigurator: React.FC<ModelConfiguratorProps> = ({
           max={1.0} 
           step={0.01}
           isLoading={isLoading}
-          helpDoc="temperature-info.html"
+          helpDocKey="temperature" // Pass key
           valueFormatter={(v) => v.toFixed(2)}
-          onOpenInfoModal={onOpenInfoModal} // Pass prop
+          onOpenInfoModal={onOpenInfoModal}
         />
         <ParameterControl
           id="topP"
@@ -201,9 +202,9 @@ export const ModelConfigurator: React.FC<ModelConfiguratorProps> = ({
           max={1.0}
           step={0.01}
           isLoading={isLoading}
-          helpDoc="topP-info.html"
+          helpDocKey="topP" // Pass key
           valueFormatter={(v) => v.toFixed(2)}
-          onOpenInfoModal={onOpenInfoModal} // Pass prop
+          onOpenInfoModal={onOpenInfoModal}
         />
         <ParameterControl
           id="topK"
@@ -214,9 +215,9 @@ export const ModelConfigurator: React.FC<ModelConfiguratorProps> = ({
           max={100} 
           step={1}
           isLoading={isLoading}
-          helpDoc="topK-info.html"
+          helpDocKey="topK" // Pass key
           valueFormatter={(v) => v.toFixed(0)}
-          onOpenInfoModal={onOpenInfoModal} // Pass prop
+          onOpenInfoModal={onOpenInfoModal}
         />
         <div className="md:col-span-2">
           <NumberInputControl
@@ -226,8 +227,8 @@ export const ModelConfigurator: React.FC<ModelConfiguratorProps> = ({
             setValue={setSeed}
             placeholder="Enter an integer (or leave blank for random)"
             isLoading={isLoading}
-            helpDoc="seed-info.html"
-            onOpenInfoModal={onOpenInfoModal} // Pass prop
+            helpDocKey="seed" // Pass key
+            onOpenInfoModal={onOpenInfoModal}
           />
         </div>
       </div>

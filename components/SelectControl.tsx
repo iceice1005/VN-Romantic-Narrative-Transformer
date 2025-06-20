@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { InfoComponentKey } from '../App'; // Import InfoComponentKey
 
 interface SelectOption {
   value: string;
@@ -13,8 +14,8 @@ interface SelectControlProps {
   setValue: (value: string) => void;
   options: SelectOption[];
   isLoading: boolean;
-  helpDoc: string;
-  onOpenInfoModal: (title: string, htmlFilePath: string) => void; // Added prop
+  helpDocKey: InfoComponentKey; // Renamed from helpDoc, type updated
+  onOpenInfoModal: (title: string, componentKey: InfoComponentKey) => void; // Updated prop type
 }
 
 export const SelectControl: React.FC<SelectControlProps> = ({
@@ -24,8 +25,8 @@ export const SelectControl: React.FC<SelectControlProps> = ({
   setValue,
   options,
   isLoading,
-  helpDoc,
-  onOpenInfoModal, // Destructure the new prop
+  helpDocKey, // Renamed from helpDoc
+  onOpenInfoModal,
 }) => {
   return (
     <div>
@@ -33,7 +34,7 @@ export const SelectControl: React.FC<SelectControlProps> = ({
         {label}
         <button
           type="button"
-          onClick={() => onOpenInfoModal(`Understanding ${label}`, helpDoc)}
+          onClick={() => onOpenInfoModal(`Understanding ${label}`, helpDocKey)} // Use helpDocKey
           className="ml-2 text-xs text-blue-500 hover:text-blue-700 underline focus:outline-none"
           aria-label={`Learn more about ${label}`}
           disabled={isLoading}
