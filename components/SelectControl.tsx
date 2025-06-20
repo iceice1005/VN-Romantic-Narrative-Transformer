@@ -30,7 +30,7 @@ export const SelectControl: React.FC<SelectControlProps> = ({
       <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-1">
         {label}
         <a
-          href={`/${helpDoc}`}
+          href={helpDoc} // Changed from `/${helpDoc}` to `helpDoc`
           target="_blank"
           rel="noopener noreferrer"
           className="ml-2 text-xs text-blue-500 hover:text-blue-700 underline"
