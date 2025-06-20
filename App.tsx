@@ -207,7 +207,8 @@ const App: React.FC = () => {
       <p className="mt-2 flex items-center justify-center text-lg"> {/* Increased font size here */}
           Powered by     &nbsp;
 
-          <a href="https://github.com/iceice1005" className="text-pink-600 hover:text-pink-700 hover:scale-110 transition-transform duration-200" style={{display: "flex", alignItems: "center"}}>
+          <a href="https://github.com/iceice1005"   target="_blank" 
+  rel="noopener noreferrer" className="text-pink-600 hover:text-pink-700 hover:scale-110 transition-transform duration-200" style={{display: "flex", alignItems: "center"}}>
             <img
               src={logo_author}
               alt="Avatar"
@@ -226,7 +227,8 @@ const App: React.FC = () => {
         <p className="mt-2 flex items-center justify-center text-lg"> {/* Increased font size here */}
           Inspired by novel translation method of    &nbsp;
 
-          <a href="https://tytnovel.xyz/profile/68235138018b5e6aea6b0abf" className="text-pink-600 hover:text-pink-700 hover:scale-110 transition-transform duration-200" style={{display: "flex", alignItems: "center"}}>
+          <a href="https://tytnovel.xyz/profile/68235138018b5e6aea6b0abf"   target="_blank" 
+  rel="noopener noreferrer" className="text-pink-600 hover:text-pink-700 hover:scale-110 transition-transform duration-200" style={{display: "flex", alignItems: "center"}}>
             <img
               src={logo}
               alt="Avatar"
