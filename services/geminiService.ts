@@ -2,21 +2,31 @@
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 
 let apiKey: string | undefined = undefined;
+
 try {
-    // Check if process and process.env are defined (they are in Vercel, Node.js, and modern build tools)
-    if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
+    // Vite-specific way (primary for client-side builds)
+    // @ts-ignore // TypeScript might not know about import.meta.env without vite/client types
+    if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_KEY) {
+        // @ts-ignore
+        apiKey = import.meta.env.VITE_API_KEY as string;
+    }
+    // Fallback for Node.js environments or other build tools (secondary)
+    else if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
         apiKey = process.env.API_KEY;
     }
 } catch (e) {
-    console.warn("process.env.API_KEY not accessible. Ensure it's set in your environment.", e);
+    console.warn("API_KEY or VITE_API_KEY not accessible. Ensure it's set in your environment.", e);
 }
 
 
 if (!apiKey) {
-  const errorMessage = "Gemini API Key (API_KEY) is not configured. " +
-    "Please ensure the API_KEY environment variable is set in your deployment environment (e.g., Vercel, Netlify) " +
-    "or properly defined in your local .env file if using a framework that supports it (e.g., Next.js, Vite). " +
-    "Directly embedding keys in client-side code or using 'env.js' for API keys is not recommended for production.";
+  const errorMessage = "Gemini API Key is not configured.\n" +
+    "If using Vite (or a similar modern build tool for client-side apps like this one):\n" +
+    "1. Ensure you have an environment variable named VITE_API_KEY set in your deployment environment (e.g., Vercel Project Settings > Environment Variables).\n" +
+    "2. For local development with Vite, create a .env file in your project root and add the line: VITE_API_KEY=YOUR_ACTUAL_GEMINI_KEY\n" +
+    "If using a non-Vite Node.js server-side environment (less common for this app's current structure):\n" +
+    "- Ensure an environment variable named API_KEY is set.\n" +
+    "Directly embedding API keys in client-side code is not recommended for production.";
   console.error(errorMessage);
   throw new Error(errorMessage);
 }
@@ -69,7 +79,6 @@ export const transformTextViaGemini = async (
         // Check for specific error patterns or properties if available
         // The Gemini API might provide more structured errors directly on the error object
         // or in a response property if it's an HTTP error wrapped.
-        // For example, if 'error' is like { response: { data: { error: { message: 'details' } } } }
         const anyError = error as any;
         if (anyError.message && anyError.message.includes("candidate.finishReason")) {
              errorMessage = `Gemini API Error: Transformation stopped unexpectedly. This could be due to safety settings or reaching the maximum output tokens. Details: ${anyError.message}`;
