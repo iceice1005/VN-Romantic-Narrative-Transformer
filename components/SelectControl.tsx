@@ -14,6 +14,7 @@ interface SelectControlProps {
   options: SelectOption[];
   isLoading: boolean;
   helpDoc: string;
+  onOpenInfoModal: (title: string, htmlFilePath: string) => void; // Added prop
 }
 
 export const SelectControl: React.FC<SelectControlProps> = ({
@@ -24,20 +25,21 @@ export const SelectControl: React.FC<SelectControlProps> = ({
   options,
   isLoading,
   helpDoc,
+  onOpenInfoModal, // Destructure the new prop
 }) => {
   return (
     <div>
       <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-1">
         {label}
-        <a
-          href={helpDoc} // Changed from `/${helpDoc}` to `helpDoc`
-          target="_blank"
-          rel="noopener noreferrer"
-          className="ml-2 text-xs text-blue-500 hover:text-blue-700 underline"
+        <button
+          type="button"
+          onClick={() => onOpenInfoModal(`Understanding ${label}`, helpDoc)}
+          className="ml-2 text-xs text-blue-500 hover:text-blue-700 underline focus:outline-none"
           aria-label={`Learn more about ${label}`}
+          disabled={isLoading}
         >
           (Learn more)
-        </a>
+        </button>
       </label>
       <select
         id={id}

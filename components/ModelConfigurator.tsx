@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { SelectControl } from './SelectControl'; // Import the new component
+import { SelectControl } from './SelectControl'; 
 
 interface ModelOption {
   id: string;
@@ -20,6 +20,7 @@ interface ModelConfiguratorProps {
   seed: string;
   setSeed: (value: string) => void;
   isLoading: boolean;
+  onOpenInfoModal: (title: string, htmlFilePath: string) => void; // Added prop
 }
 
 const ParameterControl: React.FC<{
@@ -33,22 +34,23 @@ const ParameterControl: React.FC<{
   isLoading: boolean;
   helpDoc: string;
   valueFormatter?: (value: number) => string;
-}> = ({ id, label, value, setValue, min, max, step, isLoading, helpDoc, valueFormatter }) => {
+  onOpenInfoModal: (title: string, htmlFilePath: string) => void; // Added prop
+}> = ({ id, label, value, setValue, min, max, step, isLoading, helpDoc, valueFormatter, onOpenInfoModal }) => {
   const displayValue = valueFormatter ? valueFormatter(value) : value.toString();
   
   return (
     <div className="mb-4">
       <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-1">
         {label}
-        <a 
-          href={helpDoc} // Changed from `/${helpDoc}` to `helpDoc`
-          target="_blank" 
-          rel="noopener noreferrer"
-          className="ml-2 text-xs text-blue-500 hover:text-blue-700 underline"
+        <button
+          type="button"
+          onClick={() => onOpenInfoModal(`Understanding ${label}`, helpDoc)}
+          className="ml-2 text-xs text-blue-500 hover:text-blue-700 underline focus:outline-none"
           aria-label={`Learn more about ${label}`}
+          disabled={isLoading}
         >
           (Learn more)
-        </a>
+        </button>
       </label>
       <div className="flex items-center space-x-3">
         <input
@@ -70,29 +72,18 @@ const ParameterControl: React.FC<{
           onChange={(e) => {
             const rawValue = e.target.value;
             if (rawValue === '') {
-                // If user clears the input, reset to min or a sensible default.
-                // For now, let's reset to min if it's cleared.
-                // Or, consider if current value should be retained until a valid number is typed.
-                // For simplicity, if empty, we can choose not to update immediately or set to min.
-                // Let's ensure it doesn't crash, and if they type, it updates.
-                // If they clear it, and current 'value' is valid, it stays.
-                // If they type invalid, it doesn't update.
                 return; 
             }
             const numVal = parseFloat(rawValue);
-            // Check if it's a number and within bounds.
-            // Also, consider precision for step (e.g., 0.01 means up to 2 decimal places)
             if (!isNaN(numVal) && numVal >= min && numVal <= max) {
-              // Optionally, round to the step precision if needed, e.g., for 0.01 step
               const precision = step.toString().split('.')[1]?.length || 0;
               setValue(parseFloat(numVal.toFixed(precision)));
             }
           }}
-          onBlur={(e) => { // Ensure value is clamped/set correctly on blur
+          onBlur={(e) => { 
             const numVal = parseFloat(e.target.value);
             if (isNaN(numVal) || numVal < min) setValue(min);
             else if (numVal > max) setValue(max);
-            // else it's already set by onChange if valid
           }}
           disabled={isLoading}
           className="w-24 p-1.5 border border-green-500 bg-green-600 text-white rounded-md text-sm focus:ring-2 focus:ring-green-400 focus:border-transparent disabled:bg-gray-400 disabled:text-gray-200 disabled:border-gray-300 disabled:cursor-not-allowed text-center"
@@ -114,32 +105,32 @@ const NumberInputControl: React.FC<{
     placeholder: string;
     isLoading: boolean;
     helpDoc: string;
-  }> = ({ id, label, value, setValue, placeholder, isLoading, helpDoc }) => {
+    onOpenInfoModal: (title: string, htmlFilePath: string) => void; // Added prop
+  }> = ({ id, label, value, setValue, placeholder, isLoading, helpDoc, onOpenInfoModal }) => {
     return (
       <div className="mb-4">
         <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-1">
           {label}
-          <a 
-            href={helpDoc} // Changed from `/${helpDoc}` to `helpDoc`
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="ml-2 text-xs text-blue-500 hover:text-blue-700 underline"
+          <button
+            type="button"
+            onClick={() => onOpenInfoModal(`Understanding ${label}`, helpDoc)}
+            className="ml-2 text-xs text-blue-500 hover:text-blue-700 underline focus:outline-none"
             aria-label={`Learn more about ${label}`}
+            disabled={isLoading}
           >
             (Learn more)
-          </a>
+          </button>
         </label>
         <input
-          type="text" // Changed to text to allow empty string and better control parsing
-          inputMode="numeric" // Helps mobile browsers show numeric keypad
-          pattern="[0-9]*"    // Suggests numeric input, basic validation
+          type="text" 
+          inputMode="numeric" 
+          pattern="[0-9]*"   
           id={id}
           name={id}
           value={value}
           onChange={(e) => {
             const val = e.target.value;
-            // Allow empty string or string that is a valid integer representation
-            if (val === "" || /^\d+$/.test(val) || /^-?\d+$/.test(val) /* if negative seeds allowed */) {
+            if (val === "" || /^\d+$/.test(val) || /^-?\d+$/.test(val)) {
                setValue(val);
             }
           }} 
@@ -166,6 +157,7 @@ export const ModelConfigurator: React.FC<ModelConfiguratorProps> = ({
   seed,
   setSeed,
   isLoading,
+  onOpenInfoModal, // Destructure the new prop
 }) => {
   const modelOptions = availableModels.map(model => ({ value: model.id, label: model.name }));
 
@@ -184,6 +176,7 @@ export const ModelConfigurator: React.FC<ModelConfiguratorProps> = ({
             options={modelOptions}
             isLoading={isLoading}
             helpDoc="model-selection-info.html"
+            onOpenInfoModal={onOpenInfoModal} // Pass prop
           />
         </div>
         <ParameterControl
@@ -197,18 +190,20 @@ export const ModelConfigurator: React.FC<ModelConfiguratorProps> = ({
           isLoading={isLoading}
           helpDoc="temperature-info.html"
           valueFormatter={(v) => v.toFixed(2)}
+          onOpenInfoModal={onOpenInfoModal} // Pass prop
         />
         <ParameterControl
           id="topP"
           label="Top-P (Nucleus Sampling)"
           value={topP}
           setValue={setTopP}
-          min={0.01} /* Changed min from 0.0 to 0.01 as TopP=0 can be invalid */
+          min={0.01} 
           max={1.0}
           step={0.01}
           isLoading={isLoading}
           helpDoc="topP-info.html"
           valueFormatter={(v) => v.toFixed(2)}
+          onOpenInfoModal={onOpenInfoModal} // Pass prop
         />
         <ParameterControl
           id="topK"
@@ -221,6 +216,7 @@ export const ModelConfigurator: React.FC<ModelConfiguratorProps> = ({
           isLoading={isLoading}
           helpDoc="topK-info.html"
           valueFormatter={(v) => v.toFixed(0)}
+          onOpenInfoModal={onOpenInfoModal} // Pass prop
         />
         <div className="md:col-span-2">
           <NumberInputControl
@@ -231,6 +227,7 @@ export const ModelConfigurator: React.FC<ModelConfiguratorProps> = ({
             placeholder="Enter an integer (or leave blank for random)"
             isLoading={isLoading}
             helpDoc="seed-info.html"
+            onOpenInfoModal={onOpenInfoModal} // Pass prop
           />
         </div>
       </div>
