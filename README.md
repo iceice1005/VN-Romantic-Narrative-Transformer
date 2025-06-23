@@ -19,3 +19,5 @@ This contains everything you need to run your app locally.
 
 Set the `GEMINI_API_KEY` or `API_KEY` or `VITE_API_KEY` in environment variables by [your Gemini API key](https://aistudio.google.com/app/apikey)
 
+[Here is demo example deployed by Vercel](https://vn-romantic-narrative-transformer.vercel.app/)
+
