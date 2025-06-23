@@ -11,21 +11,21 @@ const ModelSelectionInfo: React.FC = () => {
       <p>This application offers a curated selection of text generation models optimized for transforming raw text into elegant romantic narratives:</p>
       <ul>
         <li>
-          <strong><code style={{ backgroundColor: '#f3e5f5', color: '#6a1b9a', padding: '0.2rem 0.4rem', borderRadius: '4px', fontFamily: 'monospace' }}>gemini-2.5-flash-preview-04-17</code> (Gemini 2.5 Flash - Preview - Recommended):</strong>
-          This is the default and highly recommended model for the Romantic Narrative Transformer. It's fast, versatile, and excels at creative text generation, making it ideal for transforming raw text into flowing, elegant romantic prose. Its balance of speed and quality is well-suited for achieving the desired literary flair and sophisticated language characteristic of classic romance.
+          <strong><code style={{ backgroundColor: '#f3e5f5', color: '#6a1b9a', padding: '0.2rem 0.4rem', borderRadius: '4px', fontFamily: 'monospace' }}>gemini-2.5-flash-lite-preview-06-17</code> (Gemini 2.5 Flash Lite - Preview - Recommended):</strong>
+          This is the default and highly recommended model for the Romantic Narrative Transformer. It offers a cost-efficient alternative while still supporting high throughput and excellent creative text generation capabilities. It's ideal for transforming texts into romantic narratives, particularly if you're processing a large volume of text or seeking a balance of efficiency and quality romantic prose.
         </li>
         <li>
-          <strong><code style={{ backgroundColor: '#f3e5f5', color: '#6a1b9a', padding: '0.2rem 0.4rem', borderRadius: '4px', fontFamily: 'monospace' }}>gemini-2.5-flash-lite-preview-06-17</code> (Gemini 2.5 Flash Lite - Preview):</strong>
-          This model offers a cost-efficient alternative while still supporting high throughput. It can be a good choice for transforming texts into romantic narratives, particularly if you're processing a large volume of text and are looking for similar efficiency to the standard Flash model. It may offer a slightly different stylistic nuance, providing another avenue for creative exploration in your romantic writing.
+          <strong><code style={{ backgroundColor: '#f3e5f5', color: '#6a1b9a', padding: '0.2rem 0.4rem', borderRadius: '4px', fontFamily: 'monospace' }}>gemini-2.5-flash-preview-04-17</code> (Gemini 2.5 Flash - Preview):</strong>
+          This model is fast, versatile, and also excels at creative text generation. It's a strong choice for transforming raw text into flowing, elegant romantic prose, offering a slightly different profile to the Flash Lite model. It's well-suited for achieving the desired literary flair and sophisticated language characteristic of classic romance.
         </li>
       </ul>
       
       <div style={{ backgroundColor: '#e8f5e9', borderLeft: '4px solid #4caf50', padding: '1rem', marginTop: '1rem', color: '#1b5e20' }}>
-        <p><strong>Recommendation for This App:</strong> For crafting captivating romantic narratives with this tool, <strong><code style={{ backgroundColor: '#f3e5f5', color: '#6a1b9a', padding: '0.2rem 0.4rem', borderRadius: '4px', fontFamily: 'monospace' }}>gemini-2.5-flash-preview-04-17</code></strong> is the strongly recommended starting point. It's optimized for the kind of creative and stylistic transformation this app aims to achieve, balancing sophisticated language generation with performance to produce high-quality romantic prose.</p>
+        <p><strong>Recommendation for This App:</strong> For crafting captivating romantic narratives with this tool, <strong><code style={{ backgroundColor: '#f3e5f5', color: '#6a1b9a', padding: '0.2rem 0.4rem', borderRadius: '4px', fontFamily: 'monospace' }}>gemini-2.5-flash-lite-preview-06-17</code></strong> is the strongly recommended starting point. It's optimized for the kind of creative and stylistic transformation this app aims to achieve, balancing sophisticated language generation with efficiency to produce high-quality romantic prose.</p>
       </div>
 
       <h2 style={{ color: '#7b1fa2', marginTop: '1.5rem' }}>Free Tier Considerations</h2>
-      <p>The models available in this application are chosen with free-tier usage in mind, based on current Google Generative AI guidelines. The <code style={{ backgroundColor: '#f3e5f5', color: '#6a1b9a', padding: '0.2rem 0.4rem', borderRadius: '4px', fontFamily: 'monospace' }}>gemini-2.5-flash-preview-04-17</code> model is generally available under the free tier, subject to Google's usage limits.</p>
+      <p>The models available in this application are chosen with free-tier usage in mind, based on current Google Generative AI guidelines. Both <code style={{ backgroundColor: '#f3e5f5', color: '#6a1b9a', padding: '0.2rem 0.4rem', borderRadius: '4px', fontFamily: 'monospace' }}>gemini-2.5-flash-lite-preview-06-17</code> and <code style={{ backgroundColor: '#f3e5f5', color: '#6a1b9a', padding: '0.2rem 0.4rem', borderRadius: '4px', fontFamily: 'monospace' }}>gemini-2.5-flash-preview-04-17</code> are generally available under the free tier, subject to Google's usage limits.</p>
       <p>It's important to be aware of the following:</p>
       <ul>
         <li><strong>Usage Limits:</strong> Free tiers often come with limitations on the number of requests you can make per minute or per day. If you exceed these limits, you might encounter errors.</li>

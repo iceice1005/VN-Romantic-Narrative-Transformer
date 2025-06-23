@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { SelectControl } from './SelectControl'; 
 import { InfoComponentKey } from '../App'; // Import InfoComponentKey
 
@@ -161,77 +161,103 @@ export const ModelConfigurator: React.FC<ModelConfiguratorProps> = ({
   onOpenInfoModal,
 }) => {
   const modelOptions = availableModels.map(model => ({ value: model.id, label: model.name }));
+  const [isConfigOpen, setIsConfigOpen] = useState(false); // Open by default
+
+  const toggleConfig = () => {
+    setIsConfigOpen(prev => !prev);
+  };
 
   return (
     <section className="w-full p-6 bg-white shadow-xl rounded-lg border border-green-200">
-      <h2 className="text-xl font-semibold mb-6 text-green-700" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
-        Advanced Model Configuration
-      </h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2">
-        <div className="md:col-span-2 mb-4">
-          <SelectControl
-            id="modelSelection"
-            label="Model"
-            value={selectedModel}
-            setValue={setSelectedModel}
-            options={modelOptions}
+      <button
+        onClick={toggleConfig}
+        className="w-full flex justify-between items-center text-left focus:outline-none pb-3" // Added pb-3 for spacing
+        aria-expanded={isConfigOpen}
+        aria-controls="model-config-content-area"
+        // disabled={isLoading} // Optionally disable toggle during main loading
+      >
+        <h2 className="text-xl font-semibold text-green-700" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
+          Advanced Model Configuration
+        </h2>
+        <span 
+          className="text-2xl text-gray-600 transition-transform duration-300 ease-in-out"
+          style={{ transform: isConfigOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
+          aria-hidden="true"
+        >
+          ▼
+        </span>
+      </button>
+
+      {isConfigOpen && (
+        <div 
+          id="model-config-content-area" 
+          className="mt-4 pt-4 border-t border-green-100 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 animate-fadeIn"
+        >
+          <div className="md:col-span-2 mb-4">
+            <SelectControl
+              id="modelSelection"
+              label="Model"
+              value={selectedModel}
+              setValue={setSelectedModel}
+              options={modelOptions}
+              isLoading={isLoading}
+              helpDocKey="modelSelection" 
+              onOpenInfoModal={onOpenInfoModal}
+            />
+          </div>
+          <ParameterControl
+            id="temperature"
+            label="Temperature"
+            value={temperature}
+            setValue={setTemperature}
+            min={0.0}
+            max={1.0} 
+            step={0.01}
             isLoading={isLoading}
-            helpDocKey="modelSelection" // Pass key
+            helpDocKey="temperature" 
+            valueFormatter={(v) => v.toFixed(2)}
             onOpenInfoModal={onOpenInfoModal}
           />
-        </div>
-        <ParameterControl
-          id="temperature"
-          label="Temperature"
-          value={temperature}
-          setValue={setTemperature}
-          min={0.0}
-          max={1.0} 
-          step={0.01}
-          isLoading={isLoading}
-          helpDocKey="temperature" // Pass key
-          valueFormatter={(v) => v.toFixed(2)}
-          onOpenInfoModal={onOpenInfoModal}
-        />
-        <ParameterControl
-          id="topP"
-          label="Top-P (Nucleus Sampling)"
-          value={topP}
-          setValue={setTopP}
-          min={0.01} 
-          max={1.0}
-          step={0.01}
-          isLoading={isLoading}
-          helpDocKey="topP" // Pass key
-          valueFormatter={(v) => v.toFixed(2)}
-          onOpenInfoModal={onOpenInfoModal}
-        />
-        <ParameterControl
-          id="topK"
-          label="Top-K Sampling"
-          value={topK}
-          setValue={setTopK}
-          min={1}
-          max={100} 
-          step={1}
-          isLoading={isLoading}
-          helpDocKey="topK" // Pass key
-          valueFormatter={(v) => v.toFixed(0)}
-          onOpenInfoModal={onOpenInfoModal}
-        />
-        <div className="md:col-span-2">
-          <NumberInputControl
-            id="seed"
-            label="Seed (for reproducible output)"
-            value={seed}
-            setValue={setSeed}
-            placeholder="Enter an integer (or leave blank for random)"
+          <ParameterControl
+            id="topP"
+            label="Top-P (Nucleus Sampling)"
+            value={topP}
+            setValue={setTopP}
+            min={0.01} 
+            max={1.0}
+            step={0.01}
             isLoading={isLoading}
-            helpDocKey="seed" // Pass key
+            helpDocKey="topP" 
+            valueFormatter={(v) => v.toFixed(2)}
             onOpenInfoModal={onOpenInfoModal}
           />
+          <ParameterControl
+            id="topK"
+            label="Top-K Sampling"
+            value={topK}
+            setValue={setTopK}
+            min={1}
+            max={100} 
+            step={1}
+            isLoading={isLoading}
+            helpDocKey="topK" 
+            valueFormatter={(v) => v.toFixed(0)}
+            onOpenInfoModal={onOpenInfoModal}
+          />
+          <div className="md:col-span-2">
+            <NumberInputControl
+              id="seed"
+              label="Seed (for reproducible output)"
+              value={seed}
+              setValue={setSeed}
+              placeholder="Enter an integer (or leave blank for random)"
+              isLoading={isLoading}
+              helpDocKey="seed" 
+              onOpenInfoModal={onOpenInfoModal}
+            />
+          </div>
         </div>
-      </div>
+      )}
     </section>
   );
 };

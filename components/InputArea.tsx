@@ -25,6 +25,8 @@ export const InputArea: React.FC<InputAreaProps> = ({ inputText, setInputText, o
   const [fetchedSecondaryTitle, setFetchedSecondaryTitle] = useState<string | null>(null); // New state for second title
   const [titleFetchStatusMessage, setTitleFetchStatusMessage] = useState<string | null>(null);
 
+  const [isFetchUrlAdvancedOptionsOpen, setIsFetchUrlAdvancedOptionsOpen] = useState<boolean>(false);
+
 
   const handleCopy = async () => {
     if (!inputText) return;
@@ -138,6 +140,10 @@ export const InputArea: React.FC<InputAreaProps> = ({ inputText, setInputText, o
   const charCountNoSpaces = useMemo(() => getCharacterCount(inputText, false), [inputText]);
   const wordCount = useMemo(() => getWordCount(inputText), [inputText]);
 
+  const toggleFetchUrlAdvancedOptions = () => {
+    setIsFetchUrlAdvancedOptionsOpen(prev => !prev);
+  };
+
   return (
     <section className="w-full p-6 bg-white shadow-xl rounded-lg border border-pink-200">
       <h2 className="text-2xl font-semibold mb-4 text-pink-600" style={{ fontFamily: "'Times New Roman', Times, serif" }}>Enter Raw Vietnamese Text</h2>
@@ -148,7 +154,7 @@ export const InputArea: React.FC<InputAreaProps> = ({ inputText, setInputText, o
             Fetch content from a URL:
             </label>
             <p className="text-xs text-gray-500 mb-1" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
-             Extracts text from &lt;p&gt; tags within an HTML element (Content Container ID) and optionally up to two titles (Book/Chapter Title Element Class - first for Name, second for Chapter).
+             Extracts text from &lt;p&gt; tags within an HTML element and can fetch titles. Customize selectors in "Advanced Options".
             </p>
             <div className="flex items-center space-x-2">
             <input
@@ -174,70 +180,94 @@ export const InputArea: React.FC<InputAreaProps> = ({ inputText, setInputText, o
             </div>
         </div>
 
-        {/* Book/Chapter Title Element Class Input */}
-        <div className="pt-2">
-            <label htmlFor="book-title-class-input" className="block text-sm font-medium text-gray-700 mb-1" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
-                Book/Chapter Title Element Class (defaults to '{DEFAULT_BOOK_TITLE_ELEMENT_CLASS}'):
-            </label>
-             <p className="text-xs text-gray-500 mb-1" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
-             Class name of HTML elements containing titles. Uses 1st found for Name, 2nd for Chapter.
-            </p>
-            <div className="flex items-center space-x-2">
-            <input
-                type="text"
-                id="book-title-class-input"
-                value={bookTitleElementClass}
-                onChange={(e) => setBookTitleElementClass(e.target.value)}
-                placeholder={`e.g., ${DEFAULT_BOOK_TITLE_ELEMENT_CLASS} or chapter-heading-class`}
-                className="flex-grow p-2 border border-pink-300 rounded-md focus:ring-2 focus:ring-pink-400 focus:border-pink-400 placeholder-gray-400 text-gray-700 bg-white disabled:bg-gray-100"
-                disabled={isLoading || isFetchingUrl}
-                aria-label="Book or chapter title element class name"
-                style={{ fontFamily: "'Times New Roman', Times, serif" }}
-            />
-            <button
-                onClick={() => setBookTitleElementClass(DEFAULT_BOOK_TITLE_ELEMENT_CLASS)}
-                className="px-3 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 disabled:opacity-50 text-xs whitespace-nowrap"
-                disabled={isLoading || isFetchingUrl || bookTitleElementClass === DEFAULT_BOOK_TITLE_ELEMENT_CLASS}
-                aria-label="Reset book/chapter title element class to default"
-                style={{ fontFamily: "'Times New Roman', Times, serif" }}
-            >
-                Reset Class
-            </button>
-            </div>
-        </div>
+        <button
+          type="button"
+          onClick={toggleFetchUrlAdvancedOptions}
+          className="mt-1 text-sm text-pink-500 hover:text-pink-700 focus:outline-none flex items-center"
+          aria-expanded={isFetchUrlAdvancedOptionsOpen}
+          aria-controls="fetch-advanced-options-content"
+          style={{ fontFamily: "'Times New Roman', Times, serif" }}
+        >
+          {isFetchUrlAdvancedOptionsOpen ? 'Hide Advanced Options' : 'Show Advanced Options'}
+          <svg 
+            className={`w-4 h-4 ml-1 transform transition-transform duration-200 ${isFetchUrlAdvancedOptionsOpen ? 'rotate-180' : 'rotate-0'}`} 
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24" 
+            xmlns="http://www.w3.org/2000/svg"
+            aria-hidden="true"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+          </svg>
+        </button>
 
-        {/* Content Container ID Input */}
-        <div className="pt-2">
-            <label htmlFor="content-id-input" className="block text-sm font-medium text-gray-700 mb-1" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
-                Content Container ID (defaults to '{DEFAULT_CONTENT_CONTAINER_ID}'):
-            </label>
-             <p className="text-xs text-gray-500 mb-1" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
-             ID of the HTML element containing the main paragraph text to transform.
-            </p>
-            <div className="flex items-center space-x-2">
-            <input
-                type="text"
-                id="content-id-input"
-                value={contentContainerId}
-                onChange={(e) => setContentContainerId(e.target.value)}
-                placeholder={`e.g., ${DEFAULT_CONTENT_CONTAINER_ID} or main-content`}
-                className="flex-grow p-2 border border-pink-300 rounded-md focus:ring-2 focus:ring-pink-400 focus:border-pink-400 placeholder-gray-400 text-gray-700 bg-white disabled:bg-gray-100"
-                disabled={isLoading || isFetchingUrl}
-                aria-label="Content container ID"
-                style={{ fontFamily: "'Times New Roman', Times, serif" }}
-            />
-            <button
-                onClick={() => setContentContainerId(DEFAULT_CONTENT_CONTAINER_ID)}
-                className="px-3 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 disabled:opacity-50 text-xs whitespace-nowrap"
-                disabled={isLoading || isFetchingUrl || contentContainerId === DEFAULT_CONTENT_CONTAINER_ID}
-                aria-label="Reset content container ID to default"
-                style={{ fontFamily: "'Times New Roman', Times, serif" }}
-            >
-                Reset ID
-            </button>
+        {isFetchUrlAdvancedOptionsOpen && (
+          <div id="fetch-advanced-options-content" className="mt-4 space-y-4 border-t border-pink-200 pt-4 animate-fadeIn">
+            {/* Book/Chapter Title Element Class Input */}
+            <div className="pt-2">
+                <label htmlFor="book-title-class-input" className="block text-sm font-medium text-gray-700 mb-1" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
+                    Book/Chapter Title Element Class (defaults to '{DEFAULT_BOOK_TITLE_ELEMENT_CLASS}'):
+                </label>
+                 <p className="text-xs text-gray-500 mb-1" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
+                 Class name of HTML elements containing titles. Uses 1st found for Name, 2nd for Chapter.
+                </p>
+                <div className="flex items-center space-x-2">
+                <input
+                    type="text"
+                    id="book-title-class-input"
+                    value={bookTitleElementClass}
+                    onChange={(e) => setBookTitleElementClass(e.target.value)}
+                    placeholder={`e.g., ${DEFAULT_BOOK_TITLE_ELEMENT_CLASS} or chapter-heading-class`}
+                    className="flex-grow p-2 border border-pink-300 rounded-md focus:ring-2 focus:ring-pink-400 focus:border-pink-400 placeholder-gray-400 text-gray-700 bg-white disabled:bg-gray-100"
+                    disabled={isLoading || isFetchingUrl}
+                    aria-label="Book or chapter title element class name"
+                    style={{ fontFamily: "'Times New Roman', Times, serif" }}
+                />
+                <button
+                    onClick={() => setBookTitleElementClass(DEFAULT_BOOK_TITLE_ELEMENT_CLASS)}
+                    className="px-3 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 disabled:opacity-50 text-xs whitespace-nowrap"
+                    disabled={isLoading || isFetchingUrl || bookTitleElementClass === DEFAULT_BOOK_TITLE_ELEMENT_CLASS}
+                    aria-label="Reset book/chapter title element class to default"
+                    style={{ fontFamily: "'Times New Roman', Times, serif" }}
+                >
+                    Reset Class
+                </button>
+                </div>
             </div>
-        </div>
 
+            {/* Content Container ID Input */}
+            <div className="pt-2">
+                <label htmlFor="content-id-input" className="block text-sm font-medium text-gray-700 mb-1" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
+                    Content Container ID (defaults to '{DEFAULT_CONTENT_CONTAINER_ID}'):
+                </label>
+                 <p className="text-xs text-gray-500 mb-1" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
+                 ID of the HTML element containing the main paragraph text to transform.
+                </p>
+                <div className="flex items-center space-x-2">
+                <input
+                    type="text"
+                    id="content-id-input"
+                    value={contentContainerId}
+                    onChange={(e) => setContentContainerId(e.target.value)}
+                    placeholder={`e.g., ${DEFAULT_CONTENT_CONTAINER_ID} or main-content`}
+                    className="flex-grow p-2 border border-pink-300 rounded-md focus:ring-2 focus:ring-pink-400 focus:border-pink-400 placeholder-gray-400 text-gray-700 bg-white disabled:bg-gray-100"
+                    disabled={isLoading || isFetchingUrl}
+                    aria-label="Content container ID"
+                    style={{ fontFamily: "'Times New Roman', Times, serif" }}
+                />
+                <button
+                    onClick={() => setContentContainerId(DEFAULT_CONTENT_CONTAINER_ID)}
+                    className="px-3 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 disabled:opacity-50 text-xs whitespace-nowrap"
+                    disabled={isLoading || isFetchingUrl || contentContainerId === DEFAULT_CONTENT_CONTAINER_ID}
+                    aria-label="Reset content container ID to default"
+                    style={{ fontFamily: "'Times New Roman', Times, serif" }}
+                >
+                    Reset ID
+                </button>
+                </div>
+            </div>
+          </div>
+        )}
 
         {isFetchingUrl && (
           <p className="text-sm text-pink-500 mt-2" aria-live="polite">Attempting to load content from URL...</p>
