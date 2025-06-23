@@ -11,5 +11,6 @@ export interface TransformationEntry {
   topP?: number;
   topK?: number;
   seed?: number; 
-  customTitlePrefix?: string; // Added for editable history item titles
+  primaryTitle?: string; // Renamed from customTitlePrefix, for the first fetched title (Name)
+  secondaryTitle?: string; // Added for the second fetched title (Chapter)
 }

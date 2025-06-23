@@ -7,14 +7,14 @@ interface HistoryListProps {
   history: TransformationEntry[];
   onDeleteHistoryItem: (id: string) => void;
   onClearAllHistory: () => void;
-  onUpdateHistoryItemTitlePrefix: (id: string, newPrefix: string) => void; // Added prop
+  onUpdateHistoryItemPrimaryTitle: (id: string, newPrimaryTitle: string) => void; // Renamed prop
 }
 
 export const HistoryList: React.FC<HistoryListProps> = ({ 
   history, 
   onDeleteHistoryItem, 
   onClearAllHistory,
-  onUpdateHistoryItemTitlePrefix 
+  onUpdateHistoryItemPrimaryTitle 
 }) => {
   if (history.length === 0) {
     return (
@@ -44,7 +44,7 @@ export const HistoryList: React.FC<HistoryListProps> = ({
             key={entry.id} 
             entry={entry} 
             onDelete={onDeleteHistoryItem} 
-            onUpdateTitlePrefix={onUpdateHistoryItemTitlePrefix} // Pass down the new prop
+            onUpdatePrimaryTitle={onUpdateHistoryItemPrimaryTitle} // Pass down the renamed prop
           />
         ))}
       </div>

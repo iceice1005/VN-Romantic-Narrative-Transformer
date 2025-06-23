@@ -51,7 +51,7 @@ const App: React.FC = () => {
   // Modal State
   const [isInfoModalOpen, setIsInfoModalOpen] = useState<boolean>(false);
   const [infoModalTitle, setInfoModalTitle] = useState<string>('');
-  const [infoModalContent, setInfoModalContent] = useState<React.ReactNode | null>(null);
+  const [infoModalContent, setInfoModalContent] = useState<React.ReactNode | null>(null); // Changed type
   const [isInfoModalLoading, setIsInfoModalLoading] = useState<boolean>(false);
   const [infoModalError, setInfoModalError] = useState<string | null>(null);
 
@@ -59,7 +59,7 @@ const App: React.FC = () => {
   const handleOpenInfoModal = useCallback(async (title: string, componentKey: InfoComponentKey) => {
     setInfoModalTitle(title);
     setIsInfoModalOpen(true);
-    setIsInfoModalLoading(true); 
+    setIsInfoModalLoading(true); // Keep loading state briefly for consistency
     setInfoModalContent(null);
     setInfoModalError(null);
 
@@ -88,7 +88,7 @@ const App: React.FC = () => {
   }, []);
 
 
-  const handleTransform = useCallback(async (fetchedPrimaryTitle?: string, fetchedSecondaryTitle?: string) => {
+  const handleTransform = useCallback(async () => {
     if (!inputText.trim()) {
       setError('Input text cannot be empty.');
       return;
@@ -131,7 +131,7 @@ const App: React.FC = () => {
       const endTime = performance.now();
       const durationMs = endTime - startTime;
       setLastTransformationDuration(durationMs);
-      setOutputText(transformed);
+setOutputText(transformed);
 
       const currentModelDetails = AVAILABLE_TEXT_MODELS.find(m => m.id === selectedModel);
 
@@ -147,8 +147,7 @@ const App: React.FC = () => {
         topP: topP,
         topK: topK,
         seed: actualSeedUsed,
-        primaryTitle: fetchedPrimaryTitle?.trim() ? fetchedPrimaryTitle.trim() : undefined,
-        secondaryTitle: fetchedSecondaryTitle?.trim() ? fetchedSecondaryTitle.trim() : undefined,
+        customTitlePrefix: undefined,
       };
       setHistory(prevHistory => [newEntry, ...prevHistory].slice(0, 10));
     } catch (err) {
@@ -173,10 +172,10 @@ const App: React.FC = () => {
     setSystemInstruction(DEFAULT_SYSTEM_INSTRUCTION);
   }, []);
 
-  const handleUpdateHistoryItemPrimaryTitle = useCallback((id: string, newPrimaryTitle: string) => {
+  const handleUpdateHistoryItemTitlePrefix = useCallback((id: string, newPrefix: string) => {
     setHistory(prevHistory =>
       prevHistory.map(entry =>
-        entry.id === id ? { ...entry, primaryTitle: newPrimaryTitle.trim() === '' ? undefined : newPrimaryTitle.trim() } : entry
+        entry.id === id ? { ...entry, customTitlePrefix: newPrefix.trim() === '' ? undefined : newPrefix.trim() } : entry
       )
     );
   }, []);
@@ -260,7 +259,7 @@ const App: React.FC = () => {
             history={history}
             onDeleteHistoryItem={handleDeleteHistoryItem}
             onClearAllHistory={handleClearAllHistory}
-            onUpdateHistoryItemPrimaryTitle={handleUpdateHistoryItemPrimaryTitle}
+            onUpdateHistoryItemTitlePrefix={handleUpdateHistoryItemTitlePrefix}
           />
         </main>
        <footer className="w-full max-w-4xl text-center py-8 mt-auto text-xl text-gray-500" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
@@ -309,7 +308,7 @@ const App: React.FC = () => {
         isOpen={isInfoModalOpen}
         onClose={handleCloseInfoModal}
         title={infoModalTitle}
-        content={infoModalContent}
+        content={infoModalContent} // Changed from htmlContent to content
         isLoading={isInfoModalLoading}
         error={infoModalError}
       />
