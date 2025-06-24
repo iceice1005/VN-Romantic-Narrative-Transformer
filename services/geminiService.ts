@@ -1,32 +1,45 @@
 
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 
-let apiKey: string | undefined = undefined;
+// This `process.env.API_KEY` is a string that Vite replaces at build time.
+// It will be the actual key, or the literal string "undefined" if not set during build.
+const apiKeyFromVite: string = process.env.API_KEY;
 
-try {
-    // Attempt to get the API key exclusively from process.env.API_KEY
-    // This is the primary and sole method as per guidelines.
-    if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
-        apiKey = process.env.API_KEY;
-        console.info("Using API Key from process.env.API_KEY.");
-    }
-} catch (e) {
-    // Catch potential errors if process or process.env are not defined in some exotic environment
-    // Though highly unlikely in typical Node/Browser setups where process.env is expected.
-    console.warn("Error accessing process.env for API_KEY:", e);
-}
+// Check if the key is the string "undefined" (meaning it wasn't set at build time),
+// or if it's actually undefined/null/empty (which could happen if Vite's define had an issue,
+// or if the key was an empty string).
+if (
+  apiKeyFromVite === "undefined" || // Literal string "undefined"
+  apiKeyFromVite === undefined ||    // Actual undefined (shouldn't happen with JSON.stringify but belt-and-suspenders)
+  apiKeyFromVite === null ||         // Actual null (同样,不应该发生)
+  typeof apiKeyFromVite !== 'string' || // Not a string (very unlikely after Vite)
+  apiKeyFromVite.trim() === ""       // Empty or whitespace-only string
+) {
+  let problemDetail = "";
+  if (apiKeyFromVite === "undefined") {
+    problemDetail = "The API key was the literal string 'undefined'. This typically means the API_KEY environment variable was not set or was empty in the build environment (e.g., Vercel).";
+  } else if (apiKeyFromVite === undefined || apiKeyFromVite === null) {
+    problemDetail = "The API key was 'undefined' or 'null' in the bundled code. This is unexpected if Vite's 'define' feature is working correctly.";
+  } else if (typeof apiKeyFromVite !== 'string') {
+    problemDetail = "The API key was not a string type after Vite's processing, which is highly unexpected.";
+  } else if (apiKeyFromVite.trim() === "") {
+    problemDetail = "The API key was an empty or whitespace-only string in the build environment.";
+  } else {
+    problemDetail = "An unexpected issue occurred with the API key."
+  }
 
-
-if (!apiKey) {
-  const errorMessage = "Gemini API Key (process.env.API_KEY) is not configured. " +
-    "Please ensure the API_KEY environment variable is set in your deployment environment (e.g., Vercel, Netlify) " +
-    "or development environment. The application exclusively uses process.env.API_KEY. " +
-    "Directly embedding keys in client-side code or using other mechanisms for API keys is not supported.";
+  const errorMessage = "Gemini API Key (process.env.API_KEY) is not configured or is invalid. " +
+    "This application relies on the API_KEY being set as an environment variable during the build process (e.g., in Vercel settings). " +
+    "Vite (the build tool) then embeds this key into the application. " +
+    `DETAILS: ${problemDetail} ` +
+    `The value received by the application for process.env.API_KEY was: '${String(apiKeyFromVite)}' (type: ${typeof apiKeyFromVite}). ` +
+    "Please verify the API_KEY in your build environment settings and ensure it's not empty.";
   console.error(errorMessage);
   throw new Error(errorMessage);
 }
 
-const ai = new GoogleGenAI({ apiKey: apiKey });
+// If we reach here, apiKeyFromVite is a non-empty string and not the literal "undefined".
+const ai = new GoogleGenAI({ apiKey: apiKeyFromVite });
 
 export const transformTextViaGemini = async (
   modelName: string,
@@ -76,7 +89,7 @@ export const transformTextViaGemini = async (
         } else if (anyError.message && anyError.message.toLowerCase().includes("prompt_blocked")) {
           errorMessage = "Gemini API Error: The prompt was blocked, likely due to safety settings. Please revise your input or system instruction.";
         } else if (anyError.message && anyError.message.includes("API_KEY_INVALID") ) {
-             errorMessage = "Gemini API Error: The API key is invalid or not authorized. Please check your API key configuration.";
+             errorMessage = "Gemini API Error: The API key is invalid or not authorized. Please check your API key configuration. This might also indicate the key was not correctly passed from the build environment.";
         } else if (anyError.message && (anyError.message.includes("400") || anyError.message.includes("INVALID_ARGUMENT"))) {
             errorMessage = `Gemini API Error: Invalid argument. This usually means the request was malformed or a parameter was incorrect. Original error: ${anyError.message}`;
         }
