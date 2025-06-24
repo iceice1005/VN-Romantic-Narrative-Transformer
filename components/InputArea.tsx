@@ -1,32 +1,56 @@
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { getCharacterCount, getWordCount } from '../utils/textUtils';
 
 interface InputAreaProps {
   inputText: string;
   setInputText: (text: string) => void;
-  onTransform: (fetchedPrimaryTitle?: string, fetchedSecondaryTitle?: string) => void; // Modified to accept two titles
+  onTransform: () => void; // Titles are now handled via onTitlesFetched + App state
   isLoading: boolean;
+  urlInputValue: string; // Controlled URL from App.tsx
+  onUrlInputChange: (value: string) => void; // To update URL in App.tsx
+  autoFetchSignal: number; // Incremented by App.tsx to trigger fetch
+  onTitlesFetched: (primary: string | null, secondary: string | null) => void; // Callback for fetched titles
 }
 
 const DEFAULT_BOOK_TITLE_ELEMENT_CLASS = 'book-title';
 const DEFAULT_CONTENT_CONTAINER_ID = 'bookContentBody';
 
-export const InputArea: React.FC<InputAreaProps> = ({ inputText, setInputText, onTransform, isLoading }) => {
+export const InputArea: React.FC<InputAreaProps> = ({ 
+  inputText, 
+  setInputText, 
+  onTransform, 
+  isLoading,
+  urlInputValue,
+  onUrlInputChange,
+  autoFetchSignal,
+  onTitlesFetched
+}) => {
   const [copyButtonText, setCopyButtonText] = useState('Copy');
-  const [urlInput, setUrlInput] = useState('');
+  const [internalUrlInput, setInternalUrlInput] = useState<string>(urlInputValue);
   const [isFetchingUrl, setIsFetchingUrl] = useState(false);
   const [fetchUrlError, setFetchUrlError] = useState<string | null>(null);
   
   const [bookTitleElementClass, setBookTitleElementClass] = useState<string>(DEFAULT_BOOK_TITLE_ELEMENT_CLASS);
   const [contentContainerId, setContentContainerId] = useState<string>(DEFAULT_CONTENT_CONTAINER_ID);
   
-  const [fetchedPrimaryTitle, setFetchedPrimaryTitle] = useState<string | null>(null); // Renamed
-  const [fetchedSecondaryTitle, setFetchedSecondaryTitle] = useState<string | null>(null); // New state for second title
+  // Local states for titles, reported up via onTitlesFetched
+  const [localFetchedPrimaryTitle, setLocalFetchedPrimaryTitle] = useState<string | null>(null);
+  const [localFetchedSecondaryTitle, setLocalFetchedSecondaryTitle] = useState<string | null>(null);
   const [titleFetchStatusMessage, setTitleFetchStatusMessage] = useState<string | null>(null);
 
   const [isFetchUrlAdvancedOptionsOpen, setIsFetchUrlAdvancedOptionsOpen] = useState<boolean>(false);
 
+  // Sync prop urlInputValue to internalUrlInput
+  useEffect(() => {
+    setInternalUrlInput(urlInputValue);
+  }, [urlInputValue]);
+
+  const handleUrlFieldChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newUrl = e.target.value;
+    setInternalUrlInput(newUrl);
+    onUrlInputChange(newUrl); // Update App.tsx state
+  };
 
   const handleCopy = async () => {
     if (!inputText) return;
@@ -41,8 +65,8 @@ export const InputArea: React.FC<InputAreaProps> = ({ inputText, setInputText, o
     }
   };
 
-  const handleFetchFromUrl = useCallback(async () => {
-    if (!urlInput.trim()) {
+  const executeFetchFromUrl = useCallback(async (urlToFetch: string) => {
+    if (!urlToFetch.trim()) {
       setFetchUrlError('Please enter a valid URL.');
       return;
     }
@@ -61,14 +85,15 @@ export const InputArea: React.FC<InputAreaProps> = ({ inputText, setInputText, o
     setIsFetchingUrl(true);
     setFetchUrlError(null);
     setInputText(''); 
-    setFetchedPrimaryTitle(null); 
-    setFetchedSecondaryTitle(null);
+    setLocalFetchedPrimaryTitle(null); 
+    setLocalFetchedSecondaryTitle(null);
+    onTitlesFetched(null, null); // Clear titles in App.tsx
     setTitleFetchStatusMessage(null);
 
     try {
-      const response = await fetch(urlInput);
+      const response = await fetch(urlToFetch);
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}. Ensure the URL is correct and the resource is publicly accessible.`);
+        throw new Error(`HTTP error! status: ${response.status}. Ensure the URL is correct, publicly accessible, and CORS allows fetching.`);
       }
       const htmlText = await response.text();
       const parser = new DOMParser();
@@ -83,7 +108,7 @@ export const InputArea: React.FC<InputAreaProps> = ({ inputText, setInputText, o
           const firstTitleElement = titleElements[0];
           primaryTitleText = firstTitleElement?.textContent?.trim() || null;
           if (primaryTitleText) {
-              setFetchedPrimaryTitle(primaryTitleText);
+              setLocalFetchedPrimaryTitle(primaryTitleText);
               statusMsg += `Fetched primary title: "${primaryTitleText}". `;
           } else {
               statusMsg += `Primary title element (class: '${titleClassToUse}') found, but text is empty. `;
@@ -93,7 +118,7 @@ export const InputArea: React.FC<InputAreaProps> = ({ inputText, setInputText, o
               const secondTitleElement = titleElements[1];
               secondaryTitleText = secondTitleElement?.textContent?.trim() || null;
               if (secondaryTitleText) {
-                  setFetchedSecondaryTitle(secondaryTitleText);
+                  setLocalFetchedSecondaryTitle(secondaryTitleText);
                   statusMsg += `Fetched secondary title: "${secondaryTitleText}".`;
               } else {
                  statusMsg += `Second title element (class: '${titleClassToUse}') found, but text is empty.`;
@@ -105,7 +130,7 @@ export const InputArea: React.FC<InputAreaProps> = ({ inputText, setInputText, o
           statusMsg = `No elements found with class: '${titleClassToUse}'. Using default history titles.`;
       }
       setTitleFetchStatusMessage(statusMsg.trim());
-
+      onTitlesFetched(primaryTitleText, secondaryTitleText); // Report titles to App
 
       const contentBody = doc.getElementById(contentIdToUse);
       if (!contentBody) {
@@ -129,12 +154,27 @@ export const InputArea: React.FC<InputAreaProps> = ({ inputText, setInputText, o
       } else {
         errorMessage += 'An unknown error occurred.';
       }
-      errorMessage += " (Note: Content might be protected by CORS policy, preventing direct client-side fetching.)";
+      if (errorMessage.includes('Failed to fetch')) {
+        errorMessage += " This might be due to network issues, the URL being incorrect, or CORS restrictions preventing client-side fetching.";
+      }
       setFetchUrlError(errorMessage);
     } finally {
       setIsFetchingUrl(false);
     }
-  }, [urlInput, setInputText, contentContainerId, bookTitleElementClass]);
+  }, [setInputText, contentContainerId, bookTitleElementClass, onTitlesFetched]);
+
+  // Effect to trigger fetch when autoFetchSignal changes
+  useEffect(() => {
+    if (autoFetchSignal > 0 && urlInputValue && urlInputValue.trim() !== '') {
+      // Ensure internalUrlInput is synced before fetching, though urlInputValue is the source of truth here.
+      if (internalUrlInput !== urlInputValue) {
+        setInternalUrlInput(urlInputValue);
+      }
+      executeFetchFromUrl(urlInputValue);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoFetchSignal]); // We only want this to run when signal changes, urlInputValue is used directly.
+                         // executeFetchFromUrl is memoized so it's a stable dep.
 
   const charCount = useMemo(() => getCharacterCount(inputText, true), [inputText]);
   const charCountNoSpaces = useMemo(() => getCharacterCount(inputText, false), [inputText]);
@@ -160,8 +200,8 @@ export const InputArea: React.FC<InputAreaProps> = ({ inputText, setInputText, o
             <input
                 type="url"
                 id="url-input"
-                value={urlInput}
-                onChange={(e) => setUrlInput(e.target.value)}
+                value={internalUrlInput} // Use internal state for display and direct editing
+                onChange={handleUrlFieldChange} // Updates internal and App state
                 placeholder="https://example.com/your-story-page"
                 className="flex-grow p-2 border border-pink-300 rounded-md focus:ring-2 focus:ring-pink-400 focus:border-pink-400 placeholder-gray-400 text-gray-700 bg-white disabled:bg-gray-100"
                 disabled={isLoading || isFetchingUrl}
@@ -169,9 +209,9 @@ export const InputArea: React.FC<InputAreaProps> = ({ inputText, setInputText, o
                 style={{ fontFamily: "'Times New Roman', Times, serif" }}
             />
             <button
-                onClick={handleFetchFromUrl}
+                onClick={() => executeFetchFromUrl(internalUrlInput)}
                 className="px-4 py-2 bg-pink-500 text-white rounded-md hover:bg-pink-600 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed text-sm whitespace-nowrap"
-                disabled={isLoading || isFetchingUrl || !urlInput.trim()}
+                disabled={isLoading || isFetchingUrl || !internalUrlInput.trim()}
                 aria-label="Fetch text from URL"
                 style={{ fontFamily: "'Times New Roman', Times, serif" }}
             >
@@ -203,7 +243,6 @@ export const InputArea: React.FC<InputAreaProps> = ({ inputText, setInputText, o
 
         {isFetchUrlAdvancedOptionsOpen && (
           <div id="fetch-advanced-options-content" className="mt-4 space-y-4 border-t border-pink-200 pt-4 animate-fadeIn">
-            {/* Book/Chapter Title Element Class Input */}
             <div className="pt-2">
                 <label htmlFor="book-title-class-input" className="block text-sm font-medium text-gray-700 mb-1" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
                     Book/Chapter Title Element Class (defaults to '{DEFAULT_BOOK_TITLE_ELEMENT_CLASS}'):
@@ -235,7 +274,6 @@ export const InputArea: React.FC<InputAreaProps> = ({ inputText, setInputText, o
                 </div>
             </div>
 
-            {/* Content Container ID Input */}
             <div className="pt-2">
                 <label htmlFor="content-id-input" className="block text-sm font-medium text-gray-700 mb-1" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
                     Content Container ID (defaults to '{DEFAULT_CONTENT_CONTAINER_ID}'):
@@ -273,7 +311,7 @@ export const InputArea: React.FC<InputAreaProps> = ({ inputText, setInputText, o
           <p className="text-sm text-pink-500 mt-2" aria-live="polite">Attempting to load content from URL...</p>
         )}
         {titleFetchStatusMessage && !isFetchingUrl && (
-          <p className={`text-sm mt-2 ${(fetchedPrimaryTitle || fetchedSecondaryTitle) ? 'text-green-600' : 'text-orange-500'}`} aria-live="polite" role="status">
+          <p className={`text-sm mt-2 ${(localFetchedPrimaryTitle || localFetchedSecondaryTitle) ? 'text-green-600' : 'text-orange-500'}`} aria-live="polite" role="status">
             {titleFetchStatusMessage}
           </p>
         )}
@@ -312,8 +350,9 @@ export const InputArea: React.FC<InputAreaProps> = ({ inputText, setInputText, o
           <button
             onClick={() => {
                 setInputText('');
-                setFetchedPrimaryTitle(null); 
-                setFetchedSecondaryTitle(null);
+                setLocalFetchedPrimaryTitle(null); 
+                setLocalFetchedSecondaryTitle(null);
+                onTitlesFetched(null, null); // Clear titles in App
                 setTitleFetchStatusMessage(null); 
                 setFetchUrlError(null); 
             }}
@@ -325,7 +364,7 @@ export const InputArea: React.FC<InputAreaProps> = ({ inputText, setInputText, o
             Clear
           </button>
           <button
-            onClick={() => onTransform(fetchedPrimaryTitle || undefined, fetchedSecondaryTitle || undefined)}
+            onClick={onTransform} // Call onTransform directly, App.tsx handles passing titles
             className="px-8 py-2 bg-pink-600 text-white rounded-md hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={isLoading || !inputText.trim() || isFetchingUrl}
             aria-label="Transform text"

@@ -1,14 +1,16 @@
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Header } from './components/Header';
 import { InputArea } from './components/InputArea';
 import { OutputArea } from './components/OutputArea';
 import { HistoryList } from './components/HistoryList';
 import { ModelConfigurator } from './components/ModelConfigurator';
 import { PromptEditor } from './components/PromptEditor';
-import { ChapterTitleFeature } from './components/ChapterTitleFeature'; 
+import { ChapterTitleFeature } from './components/ChapterTitleFeature';
+import { FetchNovelTocFeature } from './components/FetchNovelTocFeature'; // New Import
+import { NovelTocModal } from './components/NovelTocModal'; // New Import
 import { transformTextViaGemini, generateChapterTitleViaGemini } from './services/geminiService';
-import { TransformationEntry } from './types';
+import { TransformationEntry, NovelChapter } from './types'; // Added NovelChapter to types
 import { IndeterminateProgressBar } from './components/IndeterminateProgressBar';
 import { Modal } from './components/Modal';
 import { 
@@ -18,11 +20,10 @@ import {
   DEFAULT_RANDOM_TITLE_WORDS_MIN,
   DEFAULT_RANDOM_TITLE_WORDS_MAX,
   CHAPTER_TITLE_GENERATION_TEMPERATURE,
-  DEFAULT_CHAPTER_TITLE_PROMPT_TEMPLATE // New Import
+  DEFAULT_CHAPTER_TITLE_PROMPT_TEMPLATE,
+  DEFAULT_NOVEL_TOC_ITEM_CLASS // New constant import
 } from './constants';
-import logo from './logo.svg';
-import logo_author from './logo_author.png'; // Import the author logo
-// Import Info Components
+
 import TemperatureInfo from './components/info/TemperatureInfo';
 import TopPInfo from './components/info/TopPInfo';
 import TopKInfo from './components/info/TopKInfo';
@@ -63,15 +64,30 @@ const App: React.FC = () => {
   // Chapter Title Suggestion states
   const [isChapterTitleSuggestionEnabled, setIsChapterTitleSuggestionEnabled] = useState<boolean>(false);
   const [maxTitleWords, setMaxTitleWords] = useState<string>('');
-  const [chapterTitlePrompt, setChapterTitlePrompt] = useState<string>(DEFAULT_CHAPTER_TITLE_PROMPT_TEMPLATE); // New state
+  const [chapterTitlePrompt, setChapterTitlePrompt] = useState<string>(DEFAULT_CHAPTER_TITLE_PROMPT_TEMPLATE);
 
-
-  // Modal State
+  // Modal State for Info
   const [isInfoModalOpen, setIsInfoModalOpen] = useState<boolean>(false);
   const [infoModalTitle, setInfoModalTitle] = useState<string>('');
   const [infoModalContent, setInfoModalContent] = useState<React.ReactNode | null>(null);
   const [isInfoModalLoading, setIsInfoModalLoading] = useState<boolean>(false);
   const [infoModalError, setInfoModalError] = useState<string | null>(null);
+
+  // States for Fetch Novel TOC Feature
+  const [isFetchNovelTocEnabled, setIsFetchNovelTocEnabled] = useState<boolean>(false);
+  const [novelTocUrlInput, setNovelTocUrlInput] = useState<string>('');
+  const [novelTocItemClass, setNovelTocItemClass] = useState<string>(DEFAULT_NOVEL_TOC_ITEM_CLASS); // New state for configurable class
+  const [isFetchingNovelToc, setIsFetchingNovelToc] = useState<boolean>(false);
+  const [fetchNovelTocError, setFetchNovelTocError] = useState<string | null>(null);
+  const [novelChapters, setNovelChapters] = useState<NovelChapter[] | null>(null);
+  const [isNovelTocModalOpen, setIsNovelTocModalOpen] = useState<boolean>(false);
+
+  // State for InputArea's URL (lifted) and auto-fetch trigger
+  const [inputAreaUrl, setInputAreaUrl] = useState<string>('');
+  const [autoFetchUrlSignal, setAutoFetchUrlSignal] = useState<number>(0);
+  // States for titles fetched by InputArea, to be passed to onTransform
+  const [fetchedPrimaryTitleForTransform, setFetchedPrimaryTitleForTransform] = useState<string | null>(null);
+  const [fetchedSecondaryTitleForTransform, setFetchedSecondaryTitleForTransform] = useState<string | null>(null);
 
 
   const handleOpenInfoModal = useCallback(async (title: string, componentKey: InfoComponentKey) => {
@@ -105,8 +121,7 @@ const App: React.FC = () => {
     setInfoModalError(null);
   }, []);
 
-
-  const handleTransform = useCallback(async (fetchedPrimaryTitle?: string, fetchedSecondaryTitle?: string) => {
+  const handleTransform = useCallback(async (primaryTitle?: string, secondaryTitle?: string) => {
     if (!inputText.trim()) {
       setError('Input text cannot be empty.');
       return;
@@ -154,7 +169,7 @@ const App: React.FC = () => {
       const endTime = performance.now();
       const durationMs = endTime - startTime;
       setLastTransformationDuration(durationMs);
-      setOutputText(transformedTextResult);
+setOutputText(transformedTextResult);
 
       if (isChapterTitleSuggestionEnabled && transformedTextResult.trim() !== '') {
         if (!chapterTitlePrompt.includes('{{narrativeText}}') || !chapterTitlePrompt.includes('{{maxWords}}')) {
@@ -171,7 +186,7 @@ const App: React.FC = () => {
               transformedTextResult,
               titleMaxWordsNum,
               CHAPTER_TITLE_GENERATION_TEMPERATURE,
-              chapterTitlePrompt // Pass the custom prompt
+              chapterTitlePrompt
             );
             setSuggestedChapterTitle(finalSuggestedChapterTitle);
           } catch (titleError) {
@@ -196,8 +211,8 @@ const App: React.FC = () => {
         topP: topP,
         topK: topK,
         seed: actualSeedUsed,
-        primaryTitle: fetchedPrimaryTitle?.trim() ? fetchedPrimaryTitle.trim() : undefined,
-        secondaryTitle: fetchedSecondaryTitle?.trim() ? fetchedSecondaryTitle.trim() : undefined,
+        primaryTitle: primaryTitle?.trim() ? primaryTitle.trim() : undefined,
+        secondaryTitle: secondaryTitle?.trim() ? secondaryTitle.trim() : undefined,
         suggestedChapterTitle: finalSuggestedChapterTitle,
       };
       setHistory(prevHistory => [newEntry, ...prevHistory].slice(0, 10));
@@ -213,7 +228,7 @@ const App: React.FC = () => {
     }
   }, [
       selectedModel, systemInstruction, inputText, temperature, topP, topK, seed, 
-      isChapterTitleSuggestionEnabled, maxTitleWords, chapterTitlePrompt // Add chapterTitlePrompt to dependencies
+      isChapterTitleSuggestionEnabled, maxTitleWords, chapterTitlePrompt
     ]);
 
   const handleDeleteHistoryItem = useCallback((id: string) => {
@@ -243,6 +258,95 @@ const App: React.FC = () => {
   const toggleAnotherFeature = () => {
     setIsAnotherFeatureOpen(prev => !prev);
   };
+
+  const handleFetchNovelToc = useCallback(async () => {
+    if (!novelTocUrlInput.trim()) {
+      setFetchNovelTocError('Table of Contents URL cannot be empty.');
+      return;
+    }
+    const effectiveTocItemClass = (novelTocItemClass.trim() || DEFAULT_NOVEL_TOC_ITEM_CLASS);
+    if (!effectiveTocItemClass) {
+        setFetchNovelTocError('Chapter item class name cannot be empty. Please provide a class name or reset to default.');
+        return;
+    }
+
+    setIsFetchingNovelToc(true);
+    setFetchNovelTocError(null);
+    setNovelChapters(null);
+
+    try {
+      const response = await fetch(novelTocUrlInput);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}. Ensure the URL is correct, publicly accessible, and CORS allows fetching.`);
+      }
+      const htmlText = await response.text();
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(htmlText, 'text/html');
+      
+      const chapterElements = doc.getElementsByClassName(effectiveTocItemClass);
+      const chapters: NovelChapter[] = [];
+
+      if (chapterElements.length === 0) {
+          throw new Error(`No elements with class '${effectiveTocItemClass}' were found in the fetched HTML. Possible reasons: \n1. The URL is incorrect or leads to an unexpected page. \n2. The chapter list is loaded by JavaScript after the page loads (this tool can't access dynamic content). \n3. The website blocks direct fetching (CORS issue). \n4. The class name '${effectiveTocItemClass}' is not used for chapter items, or is misspelled. \nPlease verify these points or try a different class name in the 'Advanced Content Features' section.`);
+      }
+
+      for (let i = 0; i < chapterElements.length; i++) {
+        const element = chapterElements[i];
+        const anchor = element.querySelector('a') || (element.tagName === 'A' ? element : null) as HTMLAnchorElement | null;
+        
+        if (anchor && anchor.hasAttribute('href')) {
+          const title = anchor.textContent?.trim() || `Chapter ${i + 1}`;
+          let href = anchor.getAttribute('href')!;
+          
+          try {
+            const absoluteUrl = new URL(href, novelTocUrlInput).toString();
+            chapters.push({ title, url: absoluteUrl });
+          } catch (urlError) {
+            console.warn(`Skipping invalid URL '${href}' for chapter '${title}':`, urlError);
+          }
+        }
+      }
+
+      if (chapters.length === 0) { 
+          throw new Error(`Elements with class '${effectiveTocItemClass}' were found, but no valid <a> tags with 'href' attributes could be extracted from them. Please check if these elements correctly contain clickable chapter links (anchor tags).`);
+      }
+
+      setNovelChapters(chapters);
+      setIsNovelTocModalOpen(true);
+    } catch (err) {
+      console.error('Failed to fetch novel ToC:', err);
+      let errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.';
+      
+      if (err instanceof Error) {
+        if (err.message.includes("No elements with class") || 
+            err.message.includes("Elements with class") ||
+            err.message.includes("HTTP error!")) {
+          // Use the specific error message as is
+        } else if (err.message.includes('Failed to fetch')) { 
+          errorMessage = `Network error or CORS restriction: ${err.message}. Ensure the URL is correct and the site allows access.`;
+        } else {
+          errorMessage = `Failed to fetch or parse chapters. Original error: ${err.message}`;
+        }
+      }
+      setFetchNovelTocError(errorMessage);
+    } finally {
+      setIsFetchingNovelToc(false);
+    }
+  }, [novelTocUrlInput, novelTocItemClass]);
+
+  const handleChapterSelectFromToc = useCallback((chapterUrl: string) => {
+    setIsNovelTocModalOpen(false);
+    setInputAreaUrl(chapterUrl); 
+    setAutoFetchUrlSignal(prev => prev + 1);
+    setFetchedPrimaryTitleForTransform(null);
+    setFetchedSecondaryTitleForTransform(null);
+  }, []);
+
+  const handleInputAreaTitlesFetched = useCallback((primary: string | null, secondary: string | null) => {
+    setFetchedPrimaryTitleForTransform(primary);
+    setFetchedSecondaryTitleForTransform(secondary);
+  }, []);
+
 
   return (
     <>
@@ -302,7 +406,7 @@ const App: React.FC = () => {
               aria-controls="another-feature-content"
             >
               <h2 className="text-xl font-semibold text-cyan-700" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
-                Another Feature
+                Advanced Content Features
               </h2>
               <span 
                 className="text-2xl text-gray-600 transition-transform duration-300 ease-in-out"
@@ -312,7 +416,7 @@ const App: React.FC = () => {
               </span>
             </button>
             {isAnotherFeatureOpen && (
-              <div id="another-feature-content" className="mt-6 space-y-4 border-t border-cyan-200 pt-6 animate-fadeIn">
+              <div id="another-feature-content" className="mt-6 space-y-6 border-t border-cyan-200 pt-6 animate-fadeIn">
                 <ChapterTitleFeature
                   isEnabled={isChapterTitleSuggestionEnabled}
                   setIsEnabled={setIsChapterTitleSuggestionEnabled}
@@ -320,7 +424,19 @@ const App: React.FC = () => {
                   setMaxWords={setMaxTitleWords}
                   chapterTitlePrompt={chapterTitlePrompt}
                   setChapterTitlePrompt={setChapterTitlePrompt}
-                  isLoading={isLoading}
+                  isLoading={isLoading || isFetchingNovelToc}
+                />
+                <hr className="border-cyan-100 my-6" /> 
+                <FetchNovelTocFeature
+                  isEnabled={isFetchNovelTocEnabled}
+                  setIsEnabled={setIsFetchNovelTocEnabled}
+                  novelTocUrl={novelTocUrlInput}
+                  setNovelTocUrl={setNovelTocUrlInput}
+                  novelTocItemClass={novelTocItemClass}
+                  setNovelTocItemClass={setNovelTocItemClass}
+                  onFetchToc={handleFetchNovelToc}
+                  isLoading={isFetchingNovelToc || isLoading}
+                  fetchError={fetchNovelTocError}
                 />
               </div>
             )}
@@ -329,8 +445,12 @@ const App: React.FC = () => {
           <InputArea
             inputText={inputText}
             setInputText={setInputText}
-            onTransform={handleTransform}
-            isLoading={isLoading}
+            onTransform={() => handleTransform(fetchedPrimaryTitleForTransform ?? undefined, fetchedSecondaryTitleForTransform ?? undefined)}
+            isLoading={isLoading || isFetchingNovelToc}
+            urlInputValue={inputAreaUrl}
+            onUrlInputChange={setInputAreaUrl}
+            autoFetchSignal={autoFetchUrlSignal}
+            onTitlesFetched={handleInputAreaTitlesFetched}
           />
 
           {isLoading && (
@@ -362,47 +482,24 @@ const App: React.FC = () => {
             onUpdateHistoryItemPrimaryTitle={handleUpdateHistoryItemPrimaryTitle}
           />
         </main>
-       <footer className="w-full max-w-4xl text-center py-8 mt-auto text-xl text-gray-500" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
-       <p className="mt-2 flex items-center justify-center text-lg"> {/* Increased font size here */}
-           Powered by     &nbsp;
- 
-           <a href="https://github.com/iceice1005"   target="_blank" 
-   rel="noopener noreferrer" className="text-pink-600 hover:text-pink-700 hover:scale-110 transition-transform duration-200" style={{display: "flex", alignItems: "center"}}>
-             <img
-               src={logo_author}
-               alt="Avatar"
-               style={{
-                 width: "50px",          // Điều chỉnh kích thước
-                 height: "50px",
-                 borderRadius: "50%",     // Bo tròn 100% → hình tròn
-                 objectFit: "cover",      // Ảnh không bị méo
-                 display: "block",        // Loại bỏ khoảng trống dưới ảnh
-               }}
-             />
-             <strong>IceIce1005</strong> {/* Removed quotes */}
-           </a>
-           &nbsp; with Germini API
-         </p>
-         <p className="mt-2 flex items-center justify-center text-lg"> {/* Increased font size here */}
-           Inspired by novel translation method of    &nbsp;
- 
-           <a href="https://tytnovel.xyz/profile/68235138018b5e6aea6b0abf"   target="_blank" 
-   rel="noopener noreferrer" className="text-pink-600 hover:text-pink-700 hover:scale-110 transition-transform duration-200" style={{display: "flex", alignItems: "center"}}>
-             <img
-               src={logo}
-               alt="Avatar"
-               style={{
-                 width: "50px",          // Điều chỉnh kích thước
-                 height: "50px",
-                 borderRadius: "50%",     // Bo tròn 100% → hình tròn
-                 objectFit: "cover",      // Ảnh không bị méo
-                 display: "block",        // Loại bỏ khoảng trống dưới ảnh
-               }}
-             />
-             <strong>Edit vì đam mê</strong> {/* Removed quotes */}
-           </a>
-         </p>
-       </footer>
+        <footer className="w-full max-w-4xl text-center py-8 mt-auto text-sm text-gray-500" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
+          <p>Powered by Gemini API</p>
+          <p className="mt-2 flex items-center justify-center text-lg">
+            Base on ideas of&nbsp;
+            <svg 
+              xmlns="http://www.w3.org/2000/svg" 
+              viewBox="0 0 24 24" 
+              fill="currentColor" 
+              className="w-5 h-5 mr-1 inline-block text-pink-500"
+              aria-hidden="true"
+            >
+              <path fillRule="evenodd" d="M18.685 19.097A9.723 9.723 0 0021.75 12c0-5.385-4.365-9.75-9.75-9.75S2.25 6.615 2.25 12a9.723 9.723 0 003.065 7.097A9.716 9.716 0 0012 21.75a9.716 9.716 0 006.685-2.653zm-12.54-1.285A7.486 7.486 0 0112 15a7.486 7.486 0 015.855 2.812A8.224 8.224 0 0112 20.25a8.224 8.224 0 01-5.855-2.438zM15.75 9a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" clipRule="evenodd" />
+            </svg>
+            <span className="text-pink-600 hover:text-pink-700 hover:underline cursor-default">
+              <strong>Edit vì đam mê</strong>
+            </span>
+          </p>
+        </footer>
       </div>
       <Modal
         isOpen={isInfoModalOpen}
@@ -411,6 +508,16 @@ const App: React.FC = () => {
         content={infoModalContent}
         isLoading={isInfoModalLoading}
         error={infoModalError}
+      />
+      <NovelTocModal
+        isOpen={isNovelTocModalOpen}
+        onClose={() => setIsNovelTocModalOpen(false)}
+        chapters={novelChapters}
+        onChapterSelect={handleChapterSelectFromToc}
+        isLoading={isFetchingNovelToc} 
+        error={fetchNovelTocError} 
+        currentTocUrl={novelTocUrlInput}
+        configuredNovelTocItemClass={novelTocItemClass.trim() || DEFAULT_NOVEL_TOC_ITEM_CLASS}
       />
     </>
   );

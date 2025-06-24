@@ -15,3 +15,8 @@ export interface TransformationEntry {
   secondaryTitle?: string; // Added for the second fetched title (Chapter)
   suggestedChapterTitle?: string; // Added for the new feature
 }
+
+export interface NovelChapter {
+  title: string;
+  url: string;
+}

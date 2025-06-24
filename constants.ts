@@ -29,3 +29,5 @@ Chỉ cung cấp DUY NHẤT tiêu đề, không có bất kỳ cụm từ giới
 ---
 
 Tiêu đề đề xuất:`;
+
+export const DEFAULT_NOVEL_TOC_ITEM_CLASS = 'chapter-name';
