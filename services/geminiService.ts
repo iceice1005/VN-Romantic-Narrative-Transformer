@@ -2,21 +2,26 @@
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 
 let apiKey: string | undefined = undefined;
+
 try {
-    // Check if process and process.env are defined (they are in Vercel, Node.js, and modern build tools)
+    // Attempt to get the API key exclusively from process.env.API_KEY
+    // This is the primary and sole method as per guidelines.
     if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
         apiKey = process.env.API_KEY;
+        console.info("Using API Key from process.env.API_KEY.");
     }
 } catch (e) {
-    console.warn("process.env.API_KEY not accessible. Ensure it's set in your environment.", e);
+    // Catch potential errors if process or process.env are not defined in some exotic environment
+    // Though highly unlikely in typical Node/Browser setups where process.env is expected.
+    console.warn("Error accessing process.env for API_KEY:", e);
 }
 
 
 if (!apiKey) {
-  const errorMessage = "Gemini API Key (API_KEY) is not configured. " +
+  const errorMessage = "Gemini API Key (process.env.API_KEY) is not configured. " +
     "Please ensure the API_KEY environment variable is set in your deployment environment (e.g., Vercel, Netlify) " +
-    "or properly defined in your local .env file if using a framework that supports it (e.g., Next.js, Vite). " +
-    "Directly embedding keys in client-side code or using 'env.js' for API keys is not recommended for production.";
+    "or development environment. The application exclusively uses process.env.API_KEY. " +
+    "Directly embedding keys in client-side code or using other mechanisms for API keys is not supported.";
   console.error(errorMessage);
   throw new Error(errorMessage);
 }
