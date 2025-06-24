@@ -211,6 +211,13 @@ export const HistoryItem: React.FC<HistoryItemProps> = ({ entry, onDelete, onUpd
             </div>
           )}
 
+          {entry.suggestedChapterTitle && (
+            <div className="p-3 bg-teal-50 rounded-md border border-teal-100">
+                <h4 className="font-semibold text-teal-800 mb-1 text-sm">Suggested Chapter Title:</h4>
+                <p className="text-sm text-gray-700 italic">"{entry.suggestedChapterTitle}"</p>
+            </div>
+          )}
+
           <div>
             <div className="flex justify-between items-center mb-1">
               <h4 className="font-semibold text-gray-600">Original Text:</h4>

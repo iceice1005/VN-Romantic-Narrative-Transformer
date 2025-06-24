@@ -12,3 +12,20 @@ Maintain the core meaning and events of the original text, but enhance the langu
 Use rich vocabulary, metaphors, and similes characteristic of classic romance.
 Ensure the output is natural-sounding Vietnamese, not a direct or stilted rephrasing.
 The output should ONLY be the transformed Vietnamese narrative, without any introductory or concluding phrases from you.`;
+
+export const DEFAULT_RANDOM_TITLE_WORDS_MIN = 3;
+export const DEFAULT_RANDOM_TITLE_WORDS_MAX = 7;
+export const CHAPTER_TITLE_GENERATION_TEMPERATURE = 0.6;
+
+export const DEFAULT_CHAPTER_TITLE_PROMPT_TEMPLATE = `Dựa trên đoạn tự sự lãng mạn sau đây, hãy đề xuất một tiêu đề chương ngắn gọn và gợi cảm.
+Tiêu đề không quá {{maxWords}} từ.
+Tiêu đề phải bằng tiếng Việt.
+Tập trung nắm bắt bản chất của đoạn văn.
+Chỉ cung cấp DUY NHẤT tiêu đề, không có bất kỳ cụm từ giới thiệu, giải thích, dấu ngoặc kép hoặc bất kỳ văn bản nào khác xung quanh.
+
+Đoạn tự sự:
+---
+{{narrativeText}}
+---
+
+Tiêu đề đề xuất:`;

@@ -6,11 +6,20 @@ import { OutputArea } from './components/OutputArea';
 import { HistoryList } from './components/HistoryList';
 import { ModelConfigurator } from './components/ModelConfigurator';
 import { PromptEditor } from './components/PromptEditor';
-import { transformTextViaGemini } from './services/geminiService';
+import { ChapterTitleFeature } from './components/ChapterTitleFeature'; 
+import { transformTextViaGemini, generateChapterTitleViaGemini } from './services/geminiService';
 import { TransformationEntry } from './types';
 import { IndeterminateProgressBar } from './components/IndeterminateProgressBar';
 import { Modal } from './components/Modal';
-import { DEFAULT_SYSTEM_INSTRUCTION, DEFAULT_MODEL_ID, AVAILABLE_TEXT_MODELS } from './constants';
+import { 
+  DEFAULT_SYSTEM_INSTRUCTION, 
+  DEFAULT_MODEL_ID, 
+  AVAILABLE_TEXT_MODELS,
+  DEFAULT_RANDOM_TITLE_WORDS_MIN,
+  DEFAULT_RANDOM_TITLE_WORDS_MAX,
+  CHAPTER_TITLE_GENERATION_TEMPERATURE,
+  DEFAULT_CHAPTER_TITLE_PROMPT_TEMPLATE // New Import
+} from './constants';
 import logo from './logo.svg';
 import logo_author from './logo_author.png'; // Import the author logo
 // Import Info Components
@@ -35,6 +44,8 @@ const App: React.FC = () => {
   const [systemInstruction, setSystemInstruction] = useState<string>(DEFAULT_SYSTEM_INSTRUCTION);
   const [inputText, setInputText] = useState<string>('');
   const [outputText, setOutputText] = useState<string>('');
+  const [suggestedChapterTitle, setSuggestedChapterTitle] = useState<string | null>(null); 
+  const [titleSuggestionError, setTitleSuggestionError] = useState<string | null>(null); 
   const [history, setHistory] = useState<TransformationEntry[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -47,6 +58,13 @@ const App: React.FC = () => {
   const [seed, setSeed] = useState<string>(''); 
 
   const [isOptionalSettingsOpen, setIsOptionalSettingsOpen] = useState<boolean>(false);
+  const [isAnotherFeatureOpen, setIsAnotherFeatureOpen] = useState<boolean>(false); 
+
+  // Chapter Title Suggestion states
+  const [isChapterTitleSuggestionEnabled, setIsChapterTitleSuggestionEnabled] = useState<boolean>(false);
+  const [maxTitleWords, setMaxTitleWords] = useState<string>('');
+  const [chapterTitlePrompt, setChapterTitlePrompt] = useState<string>(DEFAULT_CHAPTER_TITLE_PROMPT_TEMPLATE); // New state
+
 
   // Modal State
   const [isInfoModalOpen, setIsInfoModalOpen] = useState<boolean>(false);
@@ -100,6 +118,8 @@ const App: React.FC = () => {
     setIsLoading(true);
     setError(null);
     setOutputText('');
+    setSuggestedChapterTitle(null);
+    setTitleSuggestionError(null);
     setLastTransformationDuration(null);
     const startTime = performance.now();
 
@@ -118,8 +138,11 @@ const App: React.FC = () => {
       actualSeedUsed = parsedSeed;
     }
 
+    let transformedTextResult: string = '';
+    let finalSuggestedChapterTitle: string | undefined = undefined;
+
     try {
-      const transformed = await transformTextViaGemini(
+      transformedTextResult = await transformTextViaGemini(
         selectedModel,
         systemInstruction,
         inputText,
@@ -131,14 +154,40 @@ const App: React.FC = () => {
       const endTime = performance.now();
       const durationMs = endTime - startTime;
       setLastTransformationDuration(durationMs);
-      setOutputText(transformed);
+      setOutputText(transformedTextResult);
+
+      if (isChapterTitleSuggestionEnabled && transformedTextResult.trim() !== '') {
+        if (!chapterTitlePrompt.includes('{{narrativeText}}') || !chapterTitlePrompt.includes('{{maxWords}}')) {
+          setTitleSuggestionError('Chapter title prompt template is invalid. It must contain {{narrativeText}} and {{maxWords}} placeholders.');
+        } else {
+          try {
+            let titleMaxWordsNum = parseInt(maxTitleWords.trim(), 10);
+            if (isNaN(titleMaxWordsNum) || titleMaxWordsNum <= 0) {
+              titleMaxWordsNum = Math.floor(Math.random() * (DEFAULT_RANDOM_TITLE_WORDS_MAX - DEFAULT_RANDOM_TITLE_WORDS_MIN + 1)) + DEFAULT_RANDOM_TITLE_WORDS_MIN;
+            }
+            
+            finalSuggestedChapterTitle = await generateChapterTitleViaGemini(
+              selectedModel,
+              transformedTextResult,
+              titleMaxWordsNum,
+              CHAPTER_TITLE_GENERATION_TEMPERATURE,
+              chapterTitlePrompt // Pass the custom prompt
+            );
+            setSuggestedChapterTitle(finalSuggestedChapterTitle);
+          } catch (titleError) {
+            console.error('Chapter title suggestion error:', titleError);
+            const titleErrorMessage = titleError instanceof Error ? titleError.message : 'Could not generate chapter title.';
+            setTitleSuggestionError(titleErrorMessage); 
+            finalSuggestedChapterTitle = undefined;
+          }
+        }
+      }
 
       const currentModelDetails = AVAILABLE_TEXT_MODELS.find(m => m.id === selectedModel);
-
       const newEntry: TransformationEntry = {
         id: Date.now().toString(),
         originalText: inputText,
-        transformedText: transformed,
+        transformedText: transformedTextResult,
         timestamp: new Date(),
         durationMs: durationMs,
         modelId: selectedModel,
@@ -149,17 +198,23 @@ const App: React.FC = () => {
         seed: actualSeedUsed,
         primaryTitle: fetchedPrimaryTitle?.trim() ? fetchedPrimaryTitle.trim() : undefined,
         secondaryTitle: fetchedSecondaryTitle?.trim() ? fetchedSecondaryTitle.trim() : undefined,
+        suggestedChapterTitle: finalSuggestedChapterTitle,
       };
       setHistory(prevHistory => [newEntry, ...prevHistory].slice(0, 10));
+
     } catch (err) {
       console.error('Transformation error:', err);
       const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred during transformation.';
       setError(`Failed to transform text: ${errorMessage}`);
-      setOutputText('');
+      setOutputText(''); 
+      setSuggestedChapterTitle(null); 
     } finally {
       setIsLoading(false);
     }
-  }, [selectedModel, systemInstruction, inputText, temperature, topP, topK, seed]);
+  }, [
+      selectedModel, systemInstruction, inputText, temperature, topP, topK, seed, 
+      isChapterTitleSuggestionEnabled, maxTitleWords, chapterTitlePrompt // Add chapterTitlePrompt to dependencies
+    ]);
 
   const handleDeleteHistoryItem = useCallback((id: string) => {
     setHistory(prevHistory => prevHistory.filter(entry => entry.id !== id));
@@ -183,6 +238,10 @@ const App: React.FC = () => {
 
   const toggleOptionalSettings = () => {
     setIsOptionalSettingsOpen(prev => !prev);
+  };
+
+  const toggleAnotherFeature = () => {
+    setIsAnotherFeatureOpen(prev => !prev);
   };
 
   return (
@@ -209,7 +268,7 @@ const App: React.FC = () => {
               </span>
             </button>
             {isOptionalSettingsOpen && (
-              <div id="optional-settings-content" className="mt-6 space-y-6 border-t border-gray-200 pt-6">
+              <div id="optional-settings-content" className="mt-6 space-y-6 border-t border-gray-200 pt-6 animate-fadeIn">
                 <PromptEditor
                   systemInstruction={systemInstruction}
                   setSystemInstruction={setSystemInstruction}
@@ -235,6 +294,38 @@ const App: React.FC = () => {
             )}
           </section>
 
+          <section className="w-full p-6 bg-white shadow-xl rounded-lg border border-cyan-300">
+            <button
+              onClick={toggleAnotherFeature}
+              className="w-full flex justify-between items-center text-left focus:outline-none py-2"
+              aria-expanded={isAnotherFeatureOpen}
+              aria-controls="another-feature-content"
+            >
+              <h2 className="text-xl font-semibold text-cyan-700" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
+                Another Feature
+              </h2>
+              <span 
+                className="text-2xl text-gray-600 transition-transform duration-300 ease-in-out"
+                style={{ transform: isAnotherFeatureOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
+              >
+                ▼
+              </span>
+            </button>
+            {isAnotherFeatureOpen && (
+              <div id="another-feature-content" className="mt-6 space-y-4 border-t border-cyan-200 pt-6 animate-fadeIn">
+                <ChapterTitleFeature
+                  isEnabled={isChapterTitleSuggestionEnabled}
+                  setIsEnabled={setIsChapterTitleSuggestionEnabled}
+                  maxWords={maxTitleWords}
+                  setMaxWords={setMaxTitleWords}
+                  chapterTitlePrompt={chapterTitlePrompt}
+                  setChapterTitlePrompt={setChapterTitlePrompt}
+                  isLoading={isLoading}
+                />
+              </div>
+            )}
+          </section>
+
           <InputArea
             inputText={inputText}
             setInputText={setInputText}
@@ -254,7 +345,15 @@ const App: React.FC = () => {
               <strong className="font-bold">Error: </strong>
               <span className="block sm:inline">{error}</span>
           </div>}
-          {outputText && !isLoading && <OutputArea transformedText={outputText} durationMs={lastTransformationDuration} />}
+          
+          {(outputText || suggestedChapterTitle || titleSuggestionError) && !isLoading && (
+            <OutputArea 
+              transformedText={outputText} 
+              durationMs={lastTransformationDuration}
+              suggestedChapterTitle={suggestedChapterTitle}
+              titleSuggestionError={titleSuggestionError}
+            />
+          )}
           
           <HistoryList
             history={history}

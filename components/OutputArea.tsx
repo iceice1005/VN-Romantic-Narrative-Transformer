@@ -1,12 +1,15 @@
+
 import React, { useState, useMemo } from 'react';
 import { getCharacterCount, getWordCount } from '../utils/textUtils';
 
 interface OutputAreaProps {
   transformedText: string;
-  durationMs?: number | null; // Added to display transformation time
+  durationMs?: number | null;
+  suggestedChapterTitle?: string | null;
+  titleSuggestionError?: string | null;
 }
 
-export const OutputArea: React.FC<OutputAreaProps> = ({ transformedText, durationMs }) => {
+export const OutputArea: React.FC<OutputAreaProps> = ({ transformedText, durationMs, suggestedChapterTitle, titleSuggestionError }) => {
   const [copyButtonText, setCopyButtonText] = useState('Copy Output');
 
   if (!transformedText) {
@@ -58,6 +61,24 @@ export const OutputArea: React.FC<OutputAreaProps> = ({ transformedText, duratio
       >
         <p className="whitespace-pre-wrap">{transformedText}</p>
       </div>
+
+      {suggestedChapterTitle && (
+        <div className="mt-6 pt-4 border-t border-purple-200">
+          <h3 className="text-xl font-semibold text-teal-600 mb-1" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
+            Suggested Chapter Title:
+          </h3>
+          <p className="text-lg text-gray-700 italic" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
+            "{suggestedChapterTitle}"
+          </p>
+        </div>
+      )}
+      {titleSuggestionError && (
+         <div className="mt-4 p-3 bg-red-50 border border-red-300 rounded-md">
+            <p className="text-sm text-red-700" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
+                <span className="font-semibold">Title Suggestion Error:</span> {titleSuggestionError}
+            </p>
+         </div>
+      )}
     </section>
   );
 };

@@ -2,31 +2,21 @@
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 
 let apiKey: string | undefined = undefined;
-
 try {
-    // Vite-specific way (primary for client-side builds)
-    // @ts-ignore // TypeScript might not know about import.meta.env without vite/client types
-    if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_KEY) {
-        // @ts-ignore
-        apiKey = import.meta.env.VITE_API_KEY as string;
-    }
-    // Fallback for Node.js environments or other build tools (secondary)
-    else if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
+    // Check if process and process.env are defined (they are in Vercel, Node.js, and modern build tools)
+    if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
         apiKey = process.env.API_KEY;
     }
 } catch (e) {
-    console.warn("API_KEY or VITE_API_KEY not accessible. Ensure it's set in your environment.", e);
+    console.warn("process.env.API_KEY not accessible. Ensure it's set in your environment.", e);
 }
 
 
 if (!apiKey) {
-  const errorMessage = "Gemini API Key is not configured.\n" +
-    "If using Vite (or a similar modern build tool for client-side apps like this one):\n" +
-    "1. Ensure you have an environment variable named VITE_API_KEY set in your deployment environment (e.g., Vercel Project Settings > Environment Variables).\n" +
-    "2. For local development with Vite, create a .env file in your project root and add the line: VITE_API_KEY=YOUR_ACTUAL_GEMINI_KEY\n" +
-    "If using a non-Vite Node.js server-side environment (less common for this app's current structure):\n" +
-    "- Ensure an environment variable named API_KEY is set.\n" +
-    "Directly embedding API keys in client-side code is not recommended for production.";
+  const errorMessage = "Gemini API Key (API_KEY) is not configured. " +
+    "Please ensure the API_KEY environment variable is set in your deployment environment (e.g., Vercel, Netlify) " +
+    "or properly defined in your local .env file if using a framework that supports it (e.g., Next.js, Vite). " +
+    "Directly embedding keys in client-side code or using 'env.js' for API keys is not recommended for production.";
   console.error(errorMessage);
   throw new Error(errorMessage);
 }
@@ -71,14 +61,10 @@ export const transformTextViaGemini = async (
     return text.trim();
 
   } catch (error) {
-    console.error("Error calling Gemini API:", error);
-    let errorMessage = "An unknown error occurred while communicating with the Gemini API.";
+    console.error("Error calling Gemini API for text transformation:", error);
+    let errorMessage = "An unknown error occurred while communicating with the Gemini API for text transformation.";
     if (error instanceof Error) {
-        errorMessage = error.message; // Use the original error message
-
-        // Check for specific error patterns or properties if available
-        // The Gemini API might provide more structured errors directly on the error object
-        // or in a response property if it's an HTTP error wrapped.
+        errorMessage = error.message; 
         const anyError = error as any;
         if (anyError.message && anyError.message.includes("candidate.finishReason")) {
              errorMessage = `Gemini API Error: Transformation stopped unexpectedly. This could be due to safety settings or reaching the maximum output tokens. Details: ${anyError.message}`;
@@ -89,9 +75,56 @@ export const transformTextViaGemini = async (
         } else if (anyError.message && (anyError.message.includes("400") || anyError.message.includes("INVALID_ARGUMENT"))) {
             errorMessage = `Gemini API Error: Invalid argument. This usually means the request was malformed or a parameter was incorrect. Original error: ${anyError.message}`;
         }
-        // Retain the specific "empty response" message if that was the explicitly thrown error
         if (!errorMessage.startsWith("Received an empty or invalid response from the AI")) {
-             errorMessage = `Gemini API Error: ${errorMessage}. Check console for more details if available.`;
+             errorMessage = `Gemini API Error (Transformation): ${errorMessage}. Check console for more details.`;
+        }
+    }
+    throw new Error(errorMessage);
+  }
+};
+
+export const generateChapterTitleViaGemini = async (
+  modelName: string,
+  narrativeText: string,
+  maxWords: number,
+  temperature: number,
+  chapterTitlePromptTemplate: string
+): Promise<string> => {
+  
+  const finalChapterTitlePrompt = chapterTitlePromptTemplate
+    .replace('{{narrativeText}}', narrativeText)
+    .replace('{{maxWords}}', maxWords.toString());
+
+  const modelConfig: Record<string, any> = {
+    temperature: temperature,
+    // No topP, topK, seed needed for this simpler task, let model use defaults
+  };
+
+  try {
+    const response: GenerateContentResponse = await ai.models.generateContent({
+      model: modelName, // Use the same model as main transformation or a dedicated one
+      contents: finalChapterTitlePrompt,
+      config: modelConfig,
+    });
+
+    const text = response.text;
+    if (text === null || text === undefined || text.trim() === "") {
+      throw new Error("Received an empty or invalid response from the AI for chapter title generation.");
+    }
+    // Remove potential quotes around the title, as models sometimes add them
+    return text.trim().replace(/^["']|["']$/g, ''); 
+  } catch (error) {
+    console.error("Error calling Gemini API for chapter title generation:", error);
+    let errorMessage = "An unknown error occurred while communicating with the Gemini API for chapter title generation.";
+     if (error instanceof Error) {
+        errorMessage = error.message;
+        const anyError = error as any;
+         if (anyError.message && anyError.message.includes("candidate.finishReason")) {
+             errorMessage = `Gemini API Error: Title generation stopped unexpectedly. Details: ${anyError.message}`;
+        } else if (anyError.message && anyError.message.toLowerCase().includes("prompt_blocked")) {
+          errorMessage = "Gemini API Error: The title generation prompt was blocked. Please check the input narrative and prompt template.";
+        } else {
+            errorMessage = `Gemini API Error (Title Gen): ${errorMessage}.`;
         }
     }
     throw new Error(errorMessage);
