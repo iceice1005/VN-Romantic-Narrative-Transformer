@@ -7,10 +7,12 @@ interface FetchNovelTocFeatureProps {
   setIsEnabled: (value: boolean) => void;
   novelTocUrl: string;
   setNovelTocUrl: (value: string) => void;
-  novelTocItemClass: string; // New prop
-  setNovelTocItemClass: (value: string) => void; // New prop
+  novelTocItemClass: string;
+  setNovelTocItemClass: (value: string) => void;
   onFetchToc: () => void;
-  isLoading: boolean;
+  isLoadingApp: boolean; // Main app loading (e.g., Gemini transform)
+  isExtractingLink: boolean; // True when extracting link (e.g., from truyenwikidich)
+  isFetchingToc: boolean; // True when fetching ToC content
   fetchError: string | null;
 }
 
@@ -22,9 +24,19 @@ export const FetchNovelTocFeature: React.FC<FetchNovelTocFeatureProps> = ({
   novelTocItemClass,
   setNovelTocItemClass,
   onFetchToc,
-  isLoading,
+  isLoadingApp,
+  isExtractingLink,
+  isFetchingToc,
   fetchError,
 }) => {
+  const isOverallLoading = isLoadingApp || isExtractingLink || isFetchingToc;
+  let buttonText = 'Fetch Chapters';
+  if (isExtractingLink) {
+    buttonText = 'Extracting Link...';
+  } else if (isFetchingToc) {
+    buttonText = 'Fetching Chapters...';
+  }
+
   return (
     <div className="space-y-4" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
       <div className="flex items-center">
@@ -33,7 +45,7 @@ export const FetchNovelTocFeature: React.FC<FetchNovelTocFeatureProps> = ({
           id="fetch-novel-toc-enabled"
           checked={isEnabled}
           onChange={(e) => setIsEnabled(e.target.checked)}
-          disabled={isLoading}
+          disabled={isOverallLoading}
           className="h-5 w-5 text-teal-600 border-teal-300 rounded focus:ring-teal-500 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
         />
         <label
@@ -47,7 +59,7 @@ export const FetchNovelTocFeature: React.FC<FetchNovelTocFeatureProps> = ({
       {isEnabled && (
         <div className="animate-fadeIn pl-2 space-y-4">
           <p className="text-xs text-gray-500">
-            Enter the URL of a novel's table of contents page. The app will try to extract chapter links (from {'<a href="...">'} tags inside elements with the HTML class name configured below).
+            Enter the URL of a novel's table of contents page. The app will try to extract chapter links (from {'<a href="...">'} tags inside elements with the HTML class name configured below). For sites like truyenwikidich.net, it will attempt to extract a direct content link first.
           </p>
           <div>
             <label htmlFor="novel-toc-url-input" className="block text-sm font-medium text-gray-700 mb-1">
@@ -60,16 +72,16 @@ export const FetchNovelTocFeature: React.FC<FetchNovelTocFeatureProps> = ({
                     value={novelTocUrl}
                     onChange={(e) => setNovelTocUrl(e.target.value)}
                     placeholder="https://example.com/novel/table-of-contents"
-                    disabled={isLoading}
+                    disabled={isOverallLoading}
                     className="flex-grow p-2 border border-teal-400 rounded-md focus:ring-2 focus:ring-teal-500 focus:border-teal-500 placeholder-gray-400 text-gray-700 bg-teal-50 disabled:bg-gray-100 disabled:cursor-not-allowed text-sm"
                     aria-label="Novel table of contents URL"
                 />
                 <button
                     onClick={onFetchToc}
-                    disabled={isLoading || !novelTocUrl.trim()}
+                    disabled={isOverallLoading || !novelTocUrl.trim()}
                     className="px-4 py-2 bg-teal-500 text-white rounded-md hover:bg-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-400 focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed text-sm whitespace-nowrap"
                 >
-                    {isLoading ? 'Fetching...' : 'Fetch Chapters'}
+                    {buttonText}
                 </button>
             </div>
           </div>
@@ -89,13 +101,13 @@ export const FetchNovelTocFeature: React.FC<FetchNovelTocFeatureProps> = ({
                 onChange={(e) => setNovelTocItemClass(e.target.value)}
                 placeholder={`e.g., ${DEFAULT_NOVEL_TOC_ITEM_CLASS} or chapter-link-container`}
                 className="flex-grow p-2 border border-teal-400 rounded-md focus:ring-2 focus:ring-teal-500 focus:border-teal-500 placeholder-gray-400 text-gray-700 bg-teal-50 disabled:bg-gray-100 disabled:cursor-not-allowed text-sm"
-                disabled={isLoading}
+                disabled={isOverallLoading}
                 aria-label="Novel chapter item HTML class name"
             />
             <button
                 onClick={() => setNovelTocItemClass(DEFAULT_NOVEL_TOC_ITEM_CLASS)}
                 className="px-3 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 disabled:opacity-50 text-xs whitespace-nowrap"
-                disabled={isLoading || novelTocItemClass === DEFAULT_NOVEL_TOC_ITEM_CLASS}
+                disabled={isOverallLoading || novelTocItemClass === DEFAULT_NOVEL_TOC_ITEM_CLASS}
                 aria-label="Reset chapter item class name to default"
             >
                 Reset Class
@@ -104,7 +116,7 @@ export const FetchNovelTocFeature: React.FC<FetchNovelTocFeatureProps> = ({
           </div>
 
           {fetchError && (
-            <p className="text-sm text-red-600 mt-2" role="alert">{fetchError}</p>
+            <p className="text-sm text-red-600 mt-2 whitespace-pre-line" role="alert">{fetchError}</p>
           )}
         </div>
       )}

@@ -7,10 +7,11 @@ import { HistoryList } from './components/HistoryList';
 import { ModelConfigurator } from './components/ModelConfigurator';
 import { PromptEditor } from './components/PromptEditor';
 import { ChapterTitleFeature } from './components/ChapterTitleFeature';
-import { FetchNovelTocFeature } from './components/FetchNovelTocFeature'; // New Import
-import { NovelTocModal } from './components/NovelTocModal'; // New Import
+import { FetchNovelTocFeature } from './components/FetchNovelTocFeature';
+import { NovelTocModal } from './components/NovelTocModal';
 import { transformTextViaGemini, generateChapterTitleViaGemini } from './services/geminiService';
-import { TransformationEntry, NovelChapter } from './types'; // Added NovelChapter to types
+import { extractTruyenWikiDichNetBookIndexUrl } from './services/urlExtractorService'; // New import
+import { TransformationEntry, NovelChapter } from './types';
 import { IndeterminateProgressBar } from './components/IndeterminateProgressBar';
 import { Modal } from './components/Modal';
 import { 
@@ -21,9 +22,10 @@ import {
   DEFAULT_RANDOM_TITLE_WORDS_MAX,
   CHAPTER_TITLE_GENERATION_TEMPERATURE,
   DEFAULT_CHAPTER_TITLE_PROMPT_TEMPLATE,
-  DEFAULT_NOVEL_TOC_ITEM_CLASS // New constant import
+  DEFAULT_NOVEL_TOC_ITEM_CLASS
 } from './constants';
-
+import logo from './logo.svg';
+import logo_author from './logo_author.png'; // Import the author logo
 import TemperatureInfo from './components/info/TemperatureInfo';
 import TopPInfo from './components/info/TopPInfo';
 import TopKInfo from './components/info/TopKInfo';
@@ -48,7 +50,7 @@ const App: React.FC = () => {
   const [suggestedChapterTitle, setSuggestedChapterTitle] = useState<string | null>(null); 
   const [titleSuggestionError, setTitleSuggestionError] = useState<string | null>(null); 
   const [history, setHistory] = useState<TransformationEntry[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false); // Main app loading (Gemini transformation)
   const [error, setError] = useState<string | null>(null);
   const [lastTransformationDuration, setLastTransformationDuration] = useState<number | null>(null);
 
@@ -76,8 +78,9 @@ const App: React.FC = () => {
   // States for Fetch Novel TOC Feature
   const [isFetchNovelTocEnabled, setIsFetchNovelTocEnabled] = useState<boolean>(false);
   const [novelTocUrlInput, setNovelTocUrlInput] = useState<string>('');
-  const [novelTocItemClass, setNovelTocItemClass] = useState<string>(DEFAULT_NOVEL_TOC_ITEM_CLASS); // New state for configurable class
-  const [isFetchingNovelToc, setIsFetchingNovelToc] = useState<boolean>(false);
+  const [novelTocItemClass, setNovelTocItemClass] = useState<string>(DEFAULT_NOVEL_TOC_ITEM_CLASS);
+  const [isExtractingLink, setIsExtractingLink] = useState<boolean>(false); // New state for URL extraction phase
+  const [isFetchingNovelToc, setIsFetchingNovelToc] = useState<boolean>(false); // For ToC fetching phase
   const [fetchNovelTocError, setFetchNovelTocError] = useState<string | null>(null);
   const [novelChapters, setNovelChapters] = useState<NovelChapter[] | null>(null);
   const [isNovelTocModalOpen, setIsNovelTocModalOpen] = useState<boolean>(false);
@@ -270,14 +273,39 @@ setOutputText(transformedTextResult);
         return;
     }
 
-    setIsFetchingNovelToc(true);
     setFetchNovelTocError(null);
     setNovelChapters(null);
+    
+    let urlToFetch = novelTocUrlInput;
+
+    // Check if URL needs extraction
+    try {
+        const parsedUrl = new URL(novelTocUrlInput);
+        if (parsedUrl.hostname === 'truyenwikidich.net' && parsedUrl.pathname.startsWith('/truyen/')) {
+            setIsExtractingLink(true);
+            try {
+                urlToFetch = await extractTruyenWikiDichNetBookIndexUrl(novelTocUrlInput);
+            } catch (extractionError) {
+                console.error('Failed to extract direct link from truyenwikidich.net:', extractionError);
+                const errorMsg = extractionError instanceof Error ? extractionError.message : 'Unknown error during URL extraction.';
+                setFetchNovelTocError(`Failed to prepare link for truyenwikidich.net: ${errorMsg}`);
+                setIsExtractingLink(false);
+                return;
+            }
+            setIsExtractingLink(false);
+        }
+    } catch (urlParseError) {
+        // Not a valid URL, or not a truyenwikidich URL that needs special handling.
+        // Proceed with original URL, error will be caught by fetch if invalid.
+        console.warn('URL parsing for extraction check failed or not applicable:', urlParseError);
+    }
+    
+    setIsFetchingNovelToc(true);
 
     try {
-      const response = await fetch(novelTocUrlInput);
+      const response = await fetch(urlToFetch); // Use potentially extracted URL
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}. Ensure the URL is correct, publicly accessible, and CORS allows fetching.`);
+        throw new Error(`HTTP error! status: ${response.status}. Ensure the URL (${urlToFetch === novelTocUrlInput ? 'provided' : 'extracted'}) is correct, publicly accessible, and CORS allows fetching.`);
       }
       const htmlText = await response.text();
       const parser = new DOMParser();
@@ -287,7 +315,7 @@ setOutputText(transformedTextResult);
       const chapters: NovelChapter[] = [];
 
       if (chapterElements.length === 0) {
-          throw new Error(`No elements with class '${effectiveTocItemClass}' were found in the fetched HTML. Possible reasons: \n1. The URL is incorrect or leads to an unexpected page. \n2. The chapter list is loaded by JavaScript after the page loads (this tool can't access dynamic content). \n3. The website blocks direct fetching (CORS issue). \n4. The class name '${effectiveTocItemClass}' is not used for chapter items, or is misspelled. \nPlease verify these points or try a different class name in the 'Advanced Content Features' section.`);
+          throw new Error(`No elements with class '${effectiveTocItemClass}' were found in the fetched HTML. Possible reasons: \n1. The URL (${urlToFetch === novelTocUrlInput ? 'provided' : 'extracted'}) is incorrect or leads to an unexpected page. \n2. The chapter list is loaded by JavaScript after the page loads (this tool can't access dynamic content). \n3. The website blocks direct fetching (CORS issue). \n4. The class name '${effectiveTocItemClass}' is not used for chapter items, or is misspelled. \nPlease verify these points or try a different class name in the 'Advanced Content Features' section.`);
       }
 
       for (let i = 0; i < chapterElements.length; i++) {
@@ -299,7 +327,7 @@ setOutputText(transformedTextResult);
           let href = anchor.getAttribute('href')!;
           
           try {
-            const absoluteUrl = new URL(href, novelTocUrlInput).toString();
+            const absoluteUrl = new URL(href, urlToFetch).toString(); // Base absolute URL on the fetched URL
             chapters.push({ title, url: absoluteUrl });
           } catch (urlError) {
             console.warn(`Skipping invalid URL '${href}' for chapter '${title}':`, urlError);
@@ -323,7 +351,7 @@ setOutputText(transformedTextResult);
             err.message.includes("HTTP error!")) {
           // Use the specific error message as is
         } else if (err.message.includes('Failed to fetch')) { 
-          errorMessage = `Network error or CORS restriction: ${err.message}. Ensure the URL is correct and the site allows access.`;
+          errorMessage = `Network error or CORS restriction: ${err.message}. Ensure the URL (${urlToFetch === novelTocUrlInput ? 'provided' : 'extracted'}) is correct and the site allows access.`;
         } else {
           errorMessage = `Failed to fetch or parse chapters. Original error: ${err.message}`;
         }
@@ -331,6 +359,7 @@ setOutputText(transformedTextResult);
       setFetchNovelTocError(errorMessage);
     } finally {
       setIsFetchingNovelToc(false);
+      setIsExtractingLink(false); // Ensure this is always reset
     }
   }, [novelTocUrlInput, novelTocItemClass]);
 
@@ -424,7 +453,7 @@ setOutputText(transformedTextResult);
                   setMaxWords={setMaxTitleWords}
                   chapterTitlePrompt={chapterTitlePrompt}
                   setChapterTitlePrompt={setChapterTitlePrompt}
-                  isLoading={isLoading || isFetchingNovelToc}
+                  isLoading={isLoading || isFetchingNovelToc || isExtractingLink}
                 />
                 <hr className="border-cyan-100 my-6" /> 
                 <FetchNovelTocFeature
@@ -435,7 +464,9 @@ setOutputText(transformedTextResult);
                   novelTocItemClass={novelTocItemClass}
                   setNovelTocItemClass={setNovelTocItemClass}
                   onFetchToc={handleFetchNovelToc}
-                  isLoading={isFetchingNovelToc || isLoading}
+                  isLoadingApp={isLoading}
+                  isExtractingLink={isExtractingLink}
+                  isFetchingToc={isFetchingNovelToc}
                   fetchError={fetchNovelTocError}
                 />
               </div>
@@ -446,7 +477,7 @@ setOutputText(transformedTextResult);
             inputText={inputText}
             setInputText={setInputText}
             onTransform={() => handleTransform(fetchedPrimaryTitleForTransform ?? undefined, fetchedSecondaryTitleForTransform ?? undefined)}
-            isLoading={isLoading || isFetchingNovelToc}
+            isLoading={isLoading || isFetchingNovelToc || isExtractingLink}
             urlInputValue={inputAreaUrl}
             onUrlInputChange={setInputAreaUrl}
             autoFetchSignal={autoFetchUrlSignal}
@@ -482,24 +513,47 @@ setOutputText(transformedTextResult);
             onUpdateHistoryItemPrimaryTitle={handleUpdateHistoryItemPrimaryTitle}
           />
         </main>
-        <footer className="w-full max-w-4xl text-center py-8 mt-auto text-sm text-gray-500" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
-          <p>Powered by Gemini API</p>
-          <p className="mt-2 flex items-center justify-center text-lg">
-            Base on ideas of&nbsp;
-            <svg 
-              xmlns="http://www.w3.org/2000/svg" 
-              viewBox="0 0 24 24" 
-              fill="currentColor" 
-              className="w-5 h-5 mr-1 inline-block text-pink-500"
-              aria-hidden="true"
-            >
-              <path fillRule="evenodd" d="M18.685 19.097A9.723 9.723 0 0021.75 12c0-5.385-4.365-9.75-9.75-9.75S2.25 6.615 2.25 12a9.723 9.723 0 003.065 7.097A9.716 9.716 0 0012 21.75a9.716 9.716 0 006.685-2.653zm-12.54-1.285A7.486 7.486 0 0112 15a7.486 7.486 0 015.855 2.812A8.224 8.224 0 0112 20.25a8.224 8.224 0 01-5.855-2.438zM15.75 9a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" clipRule="evenodd" />
-            </svg>
-            <span className="text-pink-600 hover:text-pink-700 hover:underline cursor-default">
-              <strong>Edit vì đam mê</strong>
-            </span>
-          </p>
-        </footer>
+       <footer className="w-full max-w-4xl text-center py-8 mt-auto text-xl text-gray-500" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
+       <p className="mt-2 flex items-center justify-center text-lg"> {/* Increased font size here */}
+           Powered by     &nbsp;
+ 
+           <a href="https://github.com/iceice1005"   target="_blank" 
+   rel="noopener noreferrer" className="text-pink-600 hover:text-pink-700 hover:scale-110 transition-transform duration-200" style={{display: "flex", alignItems: "center"}}>
+             <img
+               src={logo_author}
+               alt="Avatar"
+               style={{
+                 width: "50px",          // Điều chỉnh kích thước
+                 height: "50px",
+                 borderRadius: "50%",     // Bo tròn 100% → hình tròn
+                 objectFit: "cover",      // Ảnh không bị méo
+                 display: "block",        // Loại bỏ khoảng trống dưới ảnh
+               }}
+             />
+             <strong>IceIce1005</strong> {/* Removed quotes */}
+           </a>
+           &nbsp; with Germini API
+         </p>
+         <p className="mt-2 flex items-center justify-center text-lg"> {/* Increased font size here */}
+           Inspired by novel translation method of    &nbsp;
+ 
+           <a href="https://tytnovel.xyz/profile/68235138018b5e6aea6b0abf"   target="_blank" 
+   rel="noopener noreferrer" className="text-pink-600 hover:text-pink-700 hover:scale-110 transition-transform duration-200" style={{display: "flex", alignItems: "center"}}>
+             <img
+               src={logo}
+               alt="Avatar"
+               style={{
+                 width: "50px",          // Điều chỉnh kích thước
+                 height: "50px",
+                 borderRadius: "50%",     // Bo tròn 100% → hình tròn
+                 objectFit: "cover",      // Ảnh không bị méo
+                 display: "block",        // Loại bỏ khoảng trống dưới ảnh
+               }}
+             />
+             <strong>Edit vì đam mê</strong> {/* Removed quotes */}
+           </a>
+         </p>
+       </footer>
       </div>
       <Modal
         isOpen={isInfoModalOpen}
@@ -514,9 +568,9 @@ setOutputText(transformedTextResult);
         onClose={() => setIsNovelTocModalOpen(false)}
         chapters={novelChapters}
         onChapterSelect={handleChapterSelectFromToc}
-        isLoading={isFetchingNovelToc} 
+        isLoading={isFetchingNovelToc || isExtractingLink} 
         error={fetchNovelTocError} 
-        currentTocUrl={novelTocUrlInput}
+        currentTocUrl={novelTocUrlInput} // Show original URL for user reference
         configuredNovelTocItemClass={novelTocItemClass.trim() || DEFAULT_NOVEL_TOC_ITEM_CLASS}
       />
     </>

@@ -6,7 +6,7 @@ interface InputAreaProps {
   inputText: string;
   setInputText: (text: string) => void;
   onTransform: () => void; // Titles are now handled via onTitlesFetched + App state
-  isLoading: boolean;
+  isLoading: boolean; // This will be the combined loading state from App.tsx
   urlInputValue: string; // Controlled URL from App.tsx
   onUrlInputChange: (value: string) => void; // To update URL in App.tsx
   autoFetchSignal: number; // Incremented by App.tsx to trigger fetch
@@ -20,7 +20,7 @@ export const InputArea: React.FC<InputAreaProps> = ({
   inputText, 
   setInputText, 
   onTransform, 
-  isLoading,
+  isLoading, // Receives combined loading state from App
   urlInputValue,
   onUrlInputChange,
   autoFetchSignal,
@@ -28,7 +28,7 @@ export const InputArea: React.FC<InputAreaProps> = ({
 }) => {
   const [copyButtonText, setCopyButtonText] = useState('Copy');
   const [internalUrlInput, setInternalUrlInput] = useState<string>(urlInputValue);
-  const [isFetchingUrl, setIsFetchingUrl] = useState(false);
+  const [isFetchingUrl, setIsFetchingUrl] = useState(false); // Local state for URL fetching initiated by this component
   const [fetchUrlError, setFetchUrlError] = useState<string | null>(null);
   
   const [bookTitleElementClass, setBookTitleElementClass] = useState<string>(DEFAULT_BOOK_TITLE_ELEMENT_CLASS);
@@ -183,6 +183,9 @@ export const InputArea: React.FC<InputAreaProps> = ({
   const toggleFetchUrlAdvancedOptions = () => {
     setIsFetchUrlAdvancedOptionsOpen(prev => !prev);
   };
+  
+  const combinedIsLoading = isLoading || isFetchingUrl; //isLoading from prop, isFetchingUrl is local for URL fetch button
+
 
   return (
     <section className="w-full p-6 bg-white shadow-xl rounded-lg border border-pink-200">
@@ -204,14 +207,14 @@ export const InputArea: React.FC<InputAreaProps> = ({
                 onChange={handleUrlFieldChange} // Updates internal and App state
                 placeholder="https://example.com/your-story-page"
                 className="flex-grow p-2 border border-pink-300 rounded-md focus:ring-2 focus:ring-pink-400 focus:border-pink-400 placeholder-gray-400 text-gray-700 bg-white disabled:bg-gray-100"
-                disabled={isLoading || isFetchingUrl}
+                disabled={combinedIsLoading} // Use combined loading state
                 aria-label="URL to fetch content from"
                 style={{ fontFamily: "'Times New Roman', Times, serif" }}
             />
             <button
                 onClick={() => executeFetchFromUrl(internalUrlInput)}
                 className="px-4 py-2 bg-pink-500 text-white rounded-md hover:bg-pink-600 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed text-sm whitespace-nowrap"
-                disabled={isLoading || isFetchingUrl || !internalUrlInput.trim()}
+                disabled={combinedIsLoading || !internalUrlInput.trim()} // Use combined loading state
                 aria-label="Fetch text from URL"
                 style={{ fontFamily: "'Times New Roman', Times, serif" }}
             >
@@ -227,6 +230,7 @@ export const InputArea: React.FC<InputAreaProps> = ({
           aria-expanded={isFetchUrlAdvancedOptionsOpen}
           aria-controls="fetch-advanced-options-content"
           style={{ fontFamily: "'Times New Roman', Times, serif" }}
+          disabled={combinedIsLoading} // Disable when any loading is active
         >
           {isFetchUrlAdvancedOptionsOpen ? 'Hide Advanced Options' : 'Show Advanced Options'}
           <svg 
@@ -258,14 +262,14 @@ export const InputArea: React.FC<InputAreaProps> = ({
                     onChange={(e) => setBookTitleElementClass(e.target.value)}
                     placeholder={`e.g., ${DEFAULT_BOOK_TITLE_ELEMENT_CLASS} or chapter-heading-class`}
                     className="flex-grow p-2 border border-pink-300 rounded-md focus:ring-2 focus:ring-pink-400 focus:border-pink-400 placeholder-gray-400 text-gray-700 bg-white disabled:bg-gray-100"
-                    disabled={isLoading || isFetchingUrl}
+                    disabled={combinedIsLoading} // Use combined loading state
                     aria-label="Book or chapter title element class name"
                     style={{ fontFamily: "'Times New Roman', Times, serif" }}
                 />
                 <button
                     onClick={() => setBookTitleElementClass(DEFAULT_BOOK_TITLE_ELEMENT_CLASS)}
                     className="px-3 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 disabled:opacity-50 text-xs whitespace-nowrap"
-                    disabled={isLoading || isFetchingUrl || bookTitleElementClass === DEFAULT_BOOK_TITLE_ELEMENT_CLASS}
+                    disabled={combinedIsLoading || bookTitleElementClass === DEFAULT_BOOK_TITLE_ELEMENT_CLASS} // Use combined loading state
                     aria-label="Reset book/chapter title element class to default"
                     style={{ fontFamily: "'Times New Roman', Times, serif" }}
                 >
@@ -289,14 +293,14 @@ export const InputArea: React.FC<InputAreaProps> = ({
                     onChange={(e) => setContentContainerId(e.target.value)}
                     placeholder={`e.g., ${DEFAULT_CONTENT_CONTAINER_ID} or main-content`}
                     className="flex-grow p-2 border border-pink-300 rounded-md focus:ring-2 focus:ring-pink-400 focus:border-pink-400 placeholder-gray-400 text-gray-700 bg-white disabled:bg-gray-100"
-                    disabled={isLoading || isFetchingUrl}
+                    disabled={combinedIsLoading} // Use combined loading state
                     aria-label="Content container ID"
                     style={{ fontFamily: "'Times New Roman', Times, serif" }}
                 />
                 <button
                     onClick={() => setContentContainerId(DEFAULT_CONTENT_CONTAINER_ID)}
                     className="px-3 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 disabled:opacity-50 text-xs whitespace-nowrap"
-                    disabled={isLoading || isFetchingUrl || contentContainerId === DEFAULT_CONTENT_CONTAINER_ID}
+                    disabled={combinedIsLoading || contentContainerId === DEFAULT_CONTENT_CONTAINER_ID} // Use combined loading state
                     aria-label="Reset content container ID to default"
                     style={{ fontFamily: "'Times New Roman', Times, serif" }}
                 >
@@ -325,7 +329,7 @@ export const InputArea: React.FC<InputAreaProps> = ({
         onChange={(e) => setInputText(e.target.value)}
         placeholder="Paste your raw Vietnamese text here, or fetch from a URL above..."
         className="w-full h-48 p-3 border border-pink-300 rounded-md focus:ring-2 focus:ring-pink-400 focus:border-pink-400 resize-none placeholder-gray-400 text-gray-700 bg-pink-50"
-        disabled={isLoading || isFetchingUrl}
+        disabled={combinedIsLoading} // Use combined loading state
         lang="vi"
         aria-label="Raw Vietnamese text input"
         style={{ fontFamily: "'Times New Roman', Times, serif" }}
@@ -341,7 +345,7 @@ export const InputArea: React.FC<InputAreaProps> = ({
           <button
             onClick={handleCopy}
             className="px-6 py-2 bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:opacity-50"
-            disabled={isLoading || !inputText || isFetchingUrl}
+            disabled={combinedIsLoading || !inputText} // Use combined loading state
             aria-label="Copy input text to clipboard"
             style={{ fontFamily: "'Times New Roman', Times, serif" }}
           >
@@ -357,7 +361,7 @@ export const InputArea: React.FC<InputAreaProps> = ({
                 setFetchUrlError(null); 
             }}
             className="px-6 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 disabled:opacity-50"
-            disabled={isLoading || !inputText || isFetchingUrl}
+            disabled={combinedIsLoading || !inputText} // Use combined loading state
             aria-label="Clear input text"
             style={{ fontFamily: "'Times New Roman', Times, serif" }}
           >
@@ -366,11 +370,11 @@ export const InputArea: React.FC<InputAreaProps> = ({
           <button
             onClick={onTransform} // Call onTransform directly, App.tsx handles passing titles
             className="px-8 py-2 bg-pink-600 text-white rounded-md hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={isLoading || !inputText.trim() || isFetchingUrl}
+            disabled={combinedIsLoading || !inputText.trim()} // Use combined loading state
             aria-label="Transform text"
             style={{ fontFamily: "'Times New Roman', Times, serif" }}
           >
-            {isLoading ? 'Transforming...' : 'Transform'}
+            {isLoading ? 'Transforming...' : 'Transform'} 
           </button>
         </div>
       </div>

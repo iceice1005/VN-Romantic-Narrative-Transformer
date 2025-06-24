@@ -7,10 +7,10 @@ interface NovelTocModalProps {
   onClose: () => void;
   chapters: NovelChapter[] | null;
   onChapterSelect: (url: string) => void;
-  isLoading: boolean;
+  isLoading: boolean; // Combined loading state (isFetchingNovelToc || isExtractingLink)
   error: string | null;
   currentTocUrl: string; 
-  configuredNovelTocItemClass: string; // New prop
+  configuredNovelTocItemClass: string;
 }
 
 export const NovelTocModal: React.FC<NovelTocModalProps> = ({
@@ -56,8 +56,8 @@ export const NovelTocModal: React.FC<NovelTocModalProps> = ({
               Novel Chapter List
             </h2>
             {currentTocUrl && (
-                 <p className="text-xs text-gray-500 truncate" title={`Fetched from: ${currentTocUrl}`}>
-                    From: <a href={currentTocUrl} target="_blank" rel="noopener noreferrer" className="hover:underline text-blue-600">{currentTocUrl}</a>
+                 <p className="text-xs text-gray-500 truncate" title={`Attempted to fetch from: ${currentTocUrl}`}>
+                    Source URL: <a href={currentTocUrl} target="_blank" rel="noopener noreferrer" className="hover:underline text-blue-600">{currentTocUrl}</a>
                  </p>
             )}
           </div>
@@ -101,7 +101,7 @@ export const NovelTocModal: React.FC<NovelTocModalProps> = ({
               ))}
             </ul>
           )}
-           {!isLoading && !error && (!chapters || chapters.length === 0) && !error && ( // Added !error here to prevent double message
+           {!isLoading && !error && (!chapters || chapters.length === 0) && ( 
              <div className="flex justify-center items-center h-32">
                 <p className="text-gray-500">No chapters found. This might mean the configured class "<code>{configuredNovelTocItemClass}</code>" didn't yield any valid chapter links, or the page structure is different.</p>
              </div>

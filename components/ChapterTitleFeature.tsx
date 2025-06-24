@@ -9,7 +9,7 @@ interface ChapterTitleFeatureProps {
   setMaxWords: (value: string) => void;
   chapterTitlePrompt: string;
   setChapterTitlePrompt: (value: string) => void;
-  isLoading: boolean;
+  isLoading: boolean; // This should be a combined loading state from App (isLoading || isFetchingNovelToc || isExtractingLink)
 }
 
 export const ChapterTitleFeature: React.FC<ChapterTitleFeatureProps> = ({
