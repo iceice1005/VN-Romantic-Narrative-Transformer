@@ -2,7 +2,7 @@
 export const DEFAULT_MODEL_ID = 'gemini-2.5-flash-lite-preview-06-17';
 
 export const AVAILABLE_TEXT_MODELS = [
-  { id: 'gemini-2.5-flash-preview-04-17', name: 'Gemini 2.5 Flash (Preview)' },
+  { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash (Preview)' },
   { id: 'gemini-2.5-flash-lite-preview-06-17', name: 'Gemini 2.5 Flash Lite (Preview - Recommended)'},
 ];
 
